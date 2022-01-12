@@ -1,7 +1,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeRefactorings;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.FindSymbols;
 
 namespace AddXRefactoringProvider;
 
@@ -9,12 +9,15 @@ public class AddXRefactoringProvider: CodeRefactoringProvider
 {
     public override async Task ComputeRefactoringsAsync(CodeRefactoringContext context)
     {
-        if (!await IsValidSyntaxToSuggestRefactoringAsync(context))
+        var typeDeclaration = await TryGetValidSyntaxToSuggestRefactoringAsync(context);
+        if (typeDeclaration != null)
             return;
 
-        var method = await FindNearestRegistrationMethodAsync(context);
-        if (method != null)
-            PrepareCodeAction(context.Document, context.)
+        var registrationMethod = await FindNearestRegistrationMethodAsync(context);
+        if (registrationMethod != null)
+        {
+            var codeActions = CodeActionProvider.PrepareCodeActions(context, typeDeclaration, registrationMethod);
+        }
     }
 
     private async Task<MethodDeclarationSyntax?> FindNearestRegistrationMethodAsync(CodeRefactoringContext context)
@@ -69,20 +72,36 @@ public class AddXRefactoringProvider: CodeRefactoringProvider
                     }
                 }
             }
+
+            if (CheckMethodSignature(decl))
+                return decl;
         }
 
         return null;
     }
 
-    private async Task<bool> IsValidSyntaxToSuggestRefactoringAsync(CodeRefactoringContext context)
+    private static bool CheckMethodSignature(MethodDeclarationSyntax decl)
+    {
+        static bool TypeIsIServiceCollection(TypeSyntax? type)
+        {
+            return type is IdentifierNameSyntax { Identifier.Text: "IServiceCollection"};
+        }
+
+        return TypeIsIServiceCollection(decl.ReturnType)
+               && decl.Modifiers.IndexOf(SyntaxKind.StaticKeyword) >= 0
+               && TypeIsIServiceCollection(decl.ParameterList.Parameters.First().Type)
+               && decl.ParameterList.Parameters.First().Modifiers.IndexOf(SyntaxKind.ThisKeyword) >= 0;
+    }
+
+    private async Task<TypeDeclarationSyntax?> TryGetValidSyntaxToSuggestRefactoringAsync(CodeRefactoringContext context)
     {
         var root = await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
 
         var declaration = root?.FindToken(context.Span.Start).Parent?
             .AncestorsAndSelf()
             .OfType<TypeDeclarationSyntax>()
-            .FirstOrDefault();
+            .FirstOrDefault(t => t.Arity == 0); //generics are harder, maybe later
 
-        return declaration == null;
+        return declaration;
     }
 }
