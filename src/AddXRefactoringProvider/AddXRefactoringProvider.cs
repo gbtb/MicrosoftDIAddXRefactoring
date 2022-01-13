@@ -10,13 +10,18 @@ public class AddXRefactoringProvider: CodeRefactoringProvider
     public override async Task ComputeRefactoringsAsync(CodeRefactoringContext context)
     {
         var typeDeclaration = await TryGetValidSyntaxToSuggestRefactoringAsync(context);
-        if (typeDeclaration != null)
+        if (typeDeclaration == null)
             return;
 
         var registrationMethod = await FindNearestRegistrationMethodAsync(context);
-        if (registrationMethod != null)
+        if (registrationMethod?.Body != null)
         {
-            var codeActions = CodeActionProvider.PrepareCodeActions(context, typeDeclaration, registrationMethod);
+            var provider = new CodeActionProvider(context);
+            var codeActions = provider.PrepareCodeActions(typeDeclaration, registrationMethod);
+            foreach (var codeAction in codeActions)
+            {
+                context.RegisterRefactoring(codeAction);
+            }
         }
     }
 

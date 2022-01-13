@@ -9,55 +9,97 @@ namespace AddXRefactoringProvider;
 
 public class CodeActionProvider
 {
-    public static async Task<IEnumerable<CodeAction>> PrepareCodeActions(CodeRefactoringContext context,
-        TypeDeclarationSyntax? typeDeclarationSyntax,
+    private readonly CodeRefactoringContext _context;
+
+    public CodeActionProvider(CodeRefactoringContext context)
+    {
+        _context = context;
+    }
+    
+    public IEnumerable<CodeAction> PrepareCodeActions(
+        TypeDeclarationSyntax typeDeclarationSyntax,
         MethodDeclarationSyntax registrationMethodDeclarationSyntax)
     {
-        var doc = context.Document.Project.GetDocument(registrationMethodDeclarationSyntax.SyntaxTree);
-        if (doc == null)
-            return Enumerable.Empty<CodeAction>();
+        var serviceCollection = registrationMethodDeclarationSyntax.ParameterList.Parameters.First();
+        var possibleAddXInvocations = GetPossibleAddXInvocations(IdentifierName(serviceCollection.Identifier),
+            typeDeclarationSyntax);
 
-        var semanticModel = await doc.GetSemanticModelAsync(context.CancellationToken);
-        if (semanticModel == null)
-            return Enumerable.Empty<CodeAction>();
-
-        var method = ModelExtensions.GetDeclaredSymbol(semanticModel, registrationMethodDeclarationSyntax) as IMethodSymbol;
-        if (method == null)
-            return Enumerable.Empty<CodeAction>();
-
-        var possibleAddXInvocations = GetPossibleAddXInvocations(typeDeclarationSyntax);
-        
-        foreach (var VARIABLE in COLLECTION)
-        {
-            
-        }
-        
-        //var serviceCollectionSymbol = method.Parameters.First();
-        registrationMethodDeclarationSyntax.Body.Statements.Insert(0, GetSimpleAddXStatement());
+        return possibleAddXInvocations.Select(tuple =>
+            CodeAction.Create(tuple.actionTitle, CreateChangedSolution(registrationMethodDeclarationSyntax, tuple.invocationExpr)));
     }
 
-    private static IEnumerable<ExpressionStatementSyntax> GetPossibleAddXInvocations(IdentifierNameSyntax serviceCollection, TypeDeclarationSyntax typeDeclarationSyntax)
+    private Func<CancellationToken, Task<Solution>> CreateChangedSolution(
+        MethodDeclarationSyntax registrationMethod, ExpressionStatementSyntax addXExpr)
     {
-        if (typeDeclarationSyntax.BaseList?.Types.FirstOrDefault()?.Type is { } firstBaseType)
+        return async token =>
         {
-               
+            var doc = _context.Document.Project.GetDocument(registrationMethod.SyntaxTree);
+            if (doc == null)
+                return _context.Document.Project.Solution;
+        
+            // var semanticModel = await doc.GetSemanticModelAsync(_context.CancellationToken);
+            // if (semanticModel == null)
+            //     return _context.Document.Project.Solution;
+            //
+            // var method = ModelExtensions.GetDeclaredSymbol(semanticModel, registrationMethodDeclarationSyntax) as IMethodSymbol;
+            // if (method == null)
+            //     return _context.Document.Project.Solution;
+
+            var root = await registrationMethod.SyntaxTree.GetRootAsync(token);
+            //root.TrackNodes(registrationMethodDeclarationSyntax);
+            
+            var r = registrationMethod;
+            var statements = r.Body!.Statements.Insert(0, addXExpr);
+            var newMethodDecl = r.WithBody(r.Body.WithStatements(statements));
+            
+            var newRoot = root.ReplaceNode(registrationMethod, newMethodDecl);;
+            return doc.Project.Solution.WithDocumentSyntaxRoot(doc.Id, root);
+        };
+    }
+
+    private static IEnumerable<(string actionTitle, ExpressionStatementSyntax invocationExpr)> GetPossibleAddXInvocations(
+        IdentifierNameSyntax serviceCollection, 
+        TypeDeclarationSyntax typeDeclarationSyntax)
+    {
+        TypeArgumentListSyntax list;
+        if (typeDeclarationSyntax.BaseList?.Types.FirstOrDefault()?.Type is NameSyntax firstBaseType)
+        {
+            list = TypeArgumentList(
+                SeparatedList(new TypeSyntax[]
+                {
+                    IdentifierName(firstBaseType.ToString()),
+                    IdentifierName(typeDeclarationSyntax.Identifier)
+                })
+            );
         }
         else
         {
-            var list = TypeArgumentList(
-                SeparatedList<TypeSyntax>(new TypeSyntax[]
+            list = TypeArgumentList(
+                SeparatedList(new TypeSyntax[]
                 {
                     IdentifierName(typeDeclarationSyntax.Identifier)
                 })
             );
-            yield return ExpressionStatement(
+        }
+        
+        foreach (var addXMethodName in DefaultMethods)
+        {
+            yield return (addXMethodName, ExpressionStatement(
                 InvocationExpression(
                     MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, 
                         serviceCollection, 
-                        GenericName("AddX")
-                                .WithTypeArgumentList(list)
+                        GenericName(addXMethodName)
+                            .WithTypeArgumentList(list)
                     ))
-                );
+                )
+            );
         }
     }
+
+    private static string[] DefaultMethods = new[]
+    {
+        "AddSingleton",
+        "AddScoped",
+        "AddTransient"
+    };
 }
