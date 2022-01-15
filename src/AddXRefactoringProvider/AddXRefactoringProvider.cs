@@ -5,6 +5,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace AddXRefactoringProvider;
 
+[ExportCodeRefactoringProvider(LanguageNames.CSharp, Name = nameof(AddXRefactoringProvider))]
 public class AddXRefactoringProvider: CodeRefactoringProvider
 {
     public override async Task ComputeRefactoringsAsync(CodeRefactoringContext context)
@@ -25,22 +26,26 @@ public class AddXRefactoringProvider: CodeRefactoringProvider
         }
     }
 
-    private async Task<MethodDeclarationSyntax?> FindNearestRegistrationMethodAsync(CodeRefactoringContext context)
+    private static async Task<MethodDeclarationSyntax?> FindNearestRegistrationMethodAsync(CodeRefactoringContext context)
     {
-        var folders = context.Document.Folders.ToList();
-        while (folders.Any())
+        var folders = new Stack<string>(context.Document.Folders);
+
+        do
         {
-            var method = await ScanFolderForRegistrationMethodAsync(folders, context.Document.Project, context.CancellationToken);
+            var method =
+                await ScanFolderForRegistrationMethodAsync(folders, context.Document.Project,
+                    context.CancellationToken);
             if (method != null)
                 return method;
-            
-            folders.RemoveAt(folders.Count - 1);
-        }
+
+            if (folders.Count > 0)
+                folders.Pop();
+        } while (folders.Any());
 
         return null;
     }
 
-    private async Task<MethodDeclarationSyntax?> ScanFolderForRegistrationMethodAsync(List<string> folders, Project project, CancellationToken token)
+    private static async Task<MethodDeclarationSyntax?> ScanFolderForRegistrationMethodAsync(IEnumerable<string> folders, Project project, CancellationToken token)
     {
         var docs = project.Documents.Where(d => d.Folders.SequenceEqual(folders));
         foreach (var doc in docs)
@@ -59,7 +64,7 @@ public class AddXRefactoringProvider: CodeRefactoringProvider
 
     private static MethodDeclarationSyntax? ScanDocumentForRegistrationMethod(SyntaxNode root)
     {
-        foreach (var node in root.ChildNodes())
+        foreach (var node in root.DescendantNodesAndSelf())
         {
             if (node is not MethodDeclarationSyntax decl) 
                 continue;
@@ -69,13 +74,13 @@ public class AddXRefactoringProvider: CodeRefactoringProvider
                 foreach (var attribute in attrList.Attributes)
                 {
                     if (attribute.Name.ToString().Contains("IgnoreRegistrationMethod"))
-                        break;
+                        goto Next;
 
                     if (attribute.Name.ToString().Contains("RegistrationMethod"))
-                    {
                         return decl;
-                    }
                 }
+                Next:
+                    continue;
             }
 
             if (CheckMethodSignature(decl))
@@ -98,14 +103,14 @@ public class AddXRefactoringProvider: CodeRefactoringProvider
                && decl.ParameterList.Parameters.First().Modifiers.IndexOf(SyntaxKind.ThisKeyword) >= 0;
     }
 
-    private async Task<TypeDeclarationSyntax?> TryGetValidSyntaxToSuggestRefactoringAsync(CodeRefactoringContext context)
+    private static async Task<TypeDeclarationSyntax?> TryGetValidSyntaxToSuggestRefactoringAsync(CodeRefactoringContext context)
     {
         var root = await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
 
         var declaration = root?.FindToken(context.Span.Start).Parent?
-            .AncestorsAndSelf()
+            .DescendantNodesAndSelf()
             .OfType<TypeDeclarationSyntax>()
-            .FirstOrDefault(t => t.Arity == 0); //generics are harder, maybe later
+            .FirstOrDefault(t => t.Arity == 0 && t.Modifiers.IndexOf(SyntaxKind.StaticKeyword) < 0); //generics are harder, maybe later
 
         return declaration;
     }

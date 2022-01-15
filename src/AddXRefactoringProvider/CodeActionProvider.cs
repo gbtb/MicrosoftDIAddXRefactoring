@@ -47,19 +47,33 @@ public class CodeActionProvider
 
             var root = await registrationMethod.SyntaxTree.GetRootAsync(token);
             //root.TrackNodes(registrationMethodDeclarationSyntax);
-            
+
             var r = registrationMethod;
-            var statements = r.Body!.Statements.Insert(0, addXExpr);
+            SyntaxTriviaList leadingTrivia, trailingTrivia;
+            if (r.Body!.Statements.FirstOrDefault() is { } statement)
+            {
+                leadingTrivia = statement.GetLeadingTrivia();
+                trailingTrivia = statement.GetTrailingTrivia();
+            }
+            else
+            {
+                leadingTrivia = r.Body.GetLeadingTrivia().Add(Whitespace(" "));
+                trailingTrivia = SyntaxTriviaList.Create(LineFeed);
+            }
+            
+            var statements = r.Body!.Statements.Insert(0, 
+                addXExpr.WithLeadingTrivia(leadingTrivia).WithTrailingTrivia(trailingTrivia)
+                );
             var newMethodDecl = r.WithBody(r.Body.WithStatements(statements));
             
-            var newRoot = root.ReplaceNode(registrationMethod, newMethodDecl);;
-            return doc.Project.Solution.WithDocumentSyntaxRoot(doc.Id, root);
+            var newRoot = root.ReplaceNode(registrationMethod, newMethodDecl);
+            return doc.Project.Solution.WithDocumentSyntaxRoot(doc.Id, newRoot);
         };
     }
 
     private static IEnumerable<(string actionTitle, ExpressionStatementSyntax invocationExpr)> GetPossibleAddXInvocations(
-        IdentifierNameSyntax serviceCollection, 
-        TypeDeclarationSyntax typeDeclarationSyntax)
+        ExpressionSyntax serviceCollection, 
+        BaseTypeDeclarationSyntax typeDeclarationSyntax)
     {
         TypeArgumentListSyntax list;
         if (typeDeclarationSyntax.BaseList?.Types.FirstOrDefault()?.Type is NameSyntax firstBaseType)
@@ -67,8 +81,8 @@ public class CodeActionProvider
             list = TypeArgumentList(
                 SeparatedList(new TypeSyntax[]
                 {
-                    IdentifierName(firstBaseType.ToString()),
-                    IdentifierName(typeDeclarationSyntax.Identifier)
+                    IdentifierName(firstBaseType.WithoutTrivia().ToString()),
+                    IdentifierName(typeDeclarationSyntax.Identifier.WithoutTrivia())
                 })
             );
         }
@@ -77,7 +91,7 @@ public class CodeActionProvider
             list = TypeArgumentList(
                 SeparatedList(new TypeSyntax[]
                 {
-                    IdentifierName(typeDeclarationSyntax.Identifier)
+                    IdentifierName(typeDeclarationSyntax.Identifier.WithoutTrivia())
                 })
             );
         }
