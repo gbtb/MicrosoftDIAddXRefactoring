@@ -107,11 +107,19 @@ public class AddXRefactoringProvider: CodeRefactoringProvider
     {
         var root = await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
 
-        var declaration = root?.FindToken(context.Span.Start).Parent?
-            .DescendantNodesAndSelf()
-            .OfType<TypeDeclarationSyntax>()
-            .FirstOrDefault(t => t.Arity == 0 && t.Modifiers.IndexOf(SyntaxKind.StaticKeyword) < 0); //generics are harder, maybe later
+        var node = root?.FindToken(context.Span.Start).Parent;
+        TypeDeclarationSyntax declaration;
+        if (node is TypeDeclarationSyntax decl)
+            declaration = decl;
+        // else if (node?.Parent is TypeDeclarationSyntax decl2)
+        //     declaration = decl2;
+        else
+            return null;
+        
+        //generics are harder, maybe later
+        if (declaration.Arity == 0 && declaration.Modifiers.IndexOf(SyntaxKind.StaticKeyword) < 0)
+            return declaration;
 
-        return declaration;
+        return null;
     }
 }

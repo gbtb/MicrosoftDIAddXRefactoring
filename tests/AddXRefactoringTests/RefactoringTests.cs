@@ -213,6 +213,109 @@ namespace Lib
         Assert.IsTrue(array.IsEmpty);
     }
 
+    private static IEnumerable<TestCaseData> SourcesWithWrongLocation = new[]
+    {
+        new TestCaseData(@"
+                using System;
+                namespace Lib 
+                {
+                    public class Foo
+                    {
+                        public int Prop { get; set; }
+                    }
+
+                    public class Bar
+                    {
+                       [|public int Prop { get; set; }|]
+                    }
+                }
+            ").SetName("Property"),
+        new TestCaseData(@"
+                using System;
+                namespace Lib 
+                {
+                    public class Foo
+                    {
+                        public int Prop { get; set; }
+                    }
+
+                    public class Bar
+                    {
+                       public int [|Prop|] { get; set; }
+                    }
+                }
+            ").SetName("PropertyName"),
+        new TestCaseData(@"
+                using System;
+                [|namespace Lib|] 
+                {
+                    public class Foo
+                    {
+                        public int Prop { get; set; }
+                    }
+
+                    public class Bar
+                    {
+                       public int [|Prop|] { get; set; }
+                    }
+                }
+            ").SetName("Namespace decl"),
+        new TestCaseData(@"
+                [|using System;|]
+                namespace Lib
+                {
+                    public class Foo
+                    {
+                        public int Prop { get; set; }
+                    }
+
+                    public class Bar
+                    {
+                       public int [|Prop|] { get; set; }
+                    }
+                }
+            ").SetName("Using")
+    };
+
+    [Test]
+    [TestCaseSource(nameof(SourcesWithWrongLocation))]
+    public async Task ShouldRegisterOnlyOnClassDecl(string sourceText)
+    {
+        var workspace = new AdhocWorkspace();
+        var solution = workspace.AddSolution(SolutionInfo.Create(SolutionId.CreateNewId(), VersionStamp.Default));
+        var libProject = workspace.AddProject(ProjectInfo.Create(ProjectId.CreateNewId(), VersionStamp.Default, "Lib", "Lib", LanguageNames.CSharp));
+
+        var registrationMethod = SourceText.From(@"
+using System;
+namespace Lib 
+{
+    public static class Registrator 
+    {
+        public static IServiceCollection RegisterServices(this IServiceCollection services)
+        {
+            return services;
+        }
+    }
+}
+            ");
+        
+        var markup = new CodeMarkup(sourceText);
+        var doc = libProject.AddDocument("Lib.cs", SourceText.From(markup.Code), new [] {"Top", "Nested"});
+        libProject = doc.Project;
+        var registrationDoc = libProject.AddDocument("Registrator.cs", registrationMethod, new [] {"Top"});
+        libProject = registrationDoc.Project;
+
+        var builder = ImmutableArray.CreateBuilder<CodeAction>();
+        doc = libProject.GetDocument(doc.Id);
+        
+        var context = new CodeRefactoringContext(doc, markup.Locator.GetSpan(), a => builder.Add(a), CancellationToken.None);
+        await CreateProvider().ComputeRefactoringsAsync(context);
+        var array = builder.ToImmutable();
+        
+        Assert.IsTrue(array.IsEmpty);
+        
+    }
+
     protected override string LanguageName => LanguageNames.CSharp;
     protected override CodeRefactoringProvider CreateProvider()
     {
