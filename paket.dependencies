@@ -3,4 +3,7 @@ source https://api.nuget.org/v3/index.json
 storage: none
 framework: net5.0, netstandard2.0, netstandard2.1
 nuget Microsoft.CodeAnalysis.CSharp.Workspaces
+nuget Microsoft.NET.Test.Sdk
+nuget Nunit
+nuget NUnit3TestAdapter
 nuget SmartAnalyzers.RoslynTestKit

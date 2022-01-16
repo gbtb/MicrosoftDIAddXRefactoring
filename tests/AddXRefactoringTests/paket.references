@@ -1,1 +1,4 @@
 SmartAnalyzers.RoslynTestKit
+Microsoft.NET.Test.Sdk
+Nunit
+NUnit3TestAdapter
