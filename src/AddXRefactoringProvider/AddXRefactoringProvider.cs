@@ -29,17 +29,19 @@ public class AddXRefactoringProvider: CodeRefactoringProvider
     private static async Task<MethodDeclarationSyntax?> FindNearestRegistrationMethodAsync(CodeRefactoringContext context)
     {
         var folders = new Stack<string>(context.Document.Folders);
+        folders.Push("");
 
         do
         {
+            if (folders.Count > 0)
+                folders.Pop();
+            
             var method =
                 await ScanFolderForRegistrationMethodAsync(folders, context.Document.Project,
                     context.CancellationToken);
+            
             if (method != null)
                 return method;
-
-            if (folders.Count > 0)
-                folders.Pop();
         } while (folders.Any());
 
         return null;
@@ -54,7 +56,12 @@ public class AddXRefactoringProvider: CodeRefactoringProvider
             if (root == null)
                 continue;
 
-            var method = ScanDocumentForRegistrationMethod(root);
+            MethodDeclarationSyntax? method;
+            if (doc.Name == "Startup.cs")
+                method = TryGetConfigureServices(root);
+            else
+                method = ScanDocumentForRegistrationMethod(root, CheckConventionalMethodSignature);
+            
             if (method != null)
                 return method;
         }
@@ -62,7 +69,26 @@ public class AddXRefactoringProvider: CodeRefactoringProvider
         return null;
     }
 
-    private static MethodDeclarationSyntax? ScanDocumentForRegistrationMethod(SyntaxNode root)
+    private static MethodDeclarationSyntax? TryGetConfigureServices(SyntaxNode root)
+    {
+        foreach (var node in root.DescendantNodesAndSelf())
+        {
+            if (node is not ClassDeclarationSyntax {Identifier: {ValueText: "Startup"}})
+                continue;
+
+            return ScanDocumentForRegistrationMethod(node, CheckConfigureServicesMethod);
+        }
+
+        return null;
+    }
+
+    private static bool CheckConfigureServicesMethod(MethodDeclarationSyntax method)
+    {
+        return method.Identifier.ValueText == "ConfigureServices" &&
+               TypeIsIServiceCollection(method.ParameterList.Parameters.First().Type);
+    }
+
+    private static MethodDeclarationSyntax? ScanDocumentForRegistrationMethod(SyntaxNode root, Func<MethodDeclarationSyntax, bool> checkMethodSignature)
     {
         foreach (var node in root.DescendantNodesAndSelf())
         {
@@ -83,24 +109,24 @@ public class AddXRefactoringProvider: CodeRefactoringProvider
                     continue;
             }
 
-            if (CheckMethodSignature(decl))
+            if (checkMethodSignature(decl))
                 return decl;
         }
 
         return null;
     }
 
-    private static bool CheckMethodSignature(MethodDeclarationSyntax decl)
+    private static bool CheckConventionalMethodSignature(MethodDeclarationSyntax decl)
     {
-        static bool TypeIsIServiceCollection(TypeSyntax? type)
-        {
-            return type is IdentifierNameSyntax { Identifier.Text: "IServiceCollection"};
-        }
-
         return TypeIsIServiceCollection(decl.ReturnType)
                && decl.Modifiers.IndexOf(SyntaxKind.StaticKeyword) >= 0
                && TypeIsIServiceCollection(decl.ParameterList.Parameters.First().Type)
                && decl.ParameterList.Parameters.First().Modifiers.IndexOf(SyntaxKind.ThisKeyword) >= 0;
+    }
+
+    private static bool TypeIsIServiceCollection(TypeSyntax? type)
+    {
+        return type is IdentifierNameSyntax { Identifier.Text: "IServiceCollection"};
     }
 
     private static async Task<TypeDeclarationSyntax?> TryGetValidSyntaxToSuggestRefactoringAsync(CodeRefactoringContext context)

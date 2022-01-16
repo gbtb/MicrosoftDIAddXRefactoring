@@ -157,6 +157,101 @@ namespace Lib
     }
     
     [Test]
+    public async Task RegisterInConfigureServices()
+    {
+        var workspace = new AdhocWorkspace();
+        var solution = workspace.AddSolution(SolutionInfo.Create(SolutionId.CreateNewId(), VersionStamp.Default));
+        var libProject = workspace.AddProject(ProjectInfo.Create(ProjectId.CreateNewId(), VersionStamp.Default, "Lib", "Lib", LanguageNames.CSharp));
+
+        var sourceText = @"
+                using System;
+                namespace Lib 
+                {
+                    public class Foo
+                    {
+                        public int Prop { get; set; }
+                    }
+
+                    [|public class Bar|] 
+                    {
+                       public int Prop { get; set; }
+                    }
+                }
+            ";
+        
+        var registrationMethod = SourceText.From(@"
+using System;
+namespace Lib 
+{
+    public class Startup
+    {
+        public Startup(IConfiguration configuration)
+        {
+            Configuration = configuration;
+        }
+
+        public IConfiguration Configuration { get; }
+
+        // This method gets called by the runtime. Use this method to add services to the container.
+        public void ConfigureServices(IServiceCollection services)
+        {
+            //services.AddDbContext<ApplicationDbContext>(options =>
+            //    options.UseSqlServer(Configuration.GetConnectionString(""DefaultConnection"")));
+            services.AddDbContext<ApplicationDbContext>(options =>
+            options.UseSqlite(Configuration.GetConnectionString(""SQLite"")));
+        }
+    }
+}
+            ");
+        
+        var expectedRegistrationMethod = @"
+using System;
+namespace Lib 
+{
+    public class Startup
+    {
+        public Startup(IConfiguration configuration)
+        {
+            Configuration = configuration;
+        }
+
+        public IConfiguration Configuration { get; }
+
+        // This method gets called by the runtime. Use this method to add services to the container.
+        public void ConfigureServices(IServiceCollection services)
+        {
+            //services.AddDbContext<ApplicationDbContext>(options =>
+            //    options.UseSqlServer(Configuration.GetConnectionString(""DefaultConnection"")));
+            services.AddTransient<Bar>();
+            //services.AddDbContext<ApplicationDbContext>(options =>
+            //    options.UseSqlServer(Configuration.GetConnectionString(""DefaultConnection"")));
+            services.AddDbContext<ApplicationDbContext>(options =>
+            options.UseSqlite(Configuration.GetConnectionString(""SQLite"")));
+        }
+    }
+}
+            ";
+
+        var markup = new CodeMarkup(sourceText);
+        var doc = libProject.AddDocument("Lib.cs", SourceText.From(markup.Code), new [] {"Top", "Nested"});
+        libProject = doc.Project;
+        var registrationDoc = libProject.AddDocument("Startup.cs", registrationMethod, new string[] {});
+        libProject = registrationDoc.Project;
+
+        var builder = ImmutableArray.CreateBuilder<CodeAction>();
+        doc = libProject.GetDocument(doc.Id);
+        
+        var context = new CodeRefactoringContext(doc, markup.Locator.GetSpan(), a => builder.Add(a), CancellationToken.None);
+        await CreateProvider().ComputeRefactoringsAsync(context);
+        var array = builder.ToImmutable();
+        
+        Assert.IsFalse(array.IsEmpty);
+        Assert.AreEqual(3, array.Length);
+        
+        Verify.CodeAction(array[2], registrationDoc, expectedRegistrationMethod);
+    }
+    
+    [Test]
     public async Task DontRegisterInLowerFolder()
     {
         var workspace = new AdhocWorkspace();
