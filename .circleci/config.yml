@@ -30,7 +30,7 @@ jobs:
           working_directory: tests/AddXRefactoringTests
           name: Run tests
           command: |
-            dotnet test -v n
+            dotnet test -verbosity:diagnostic --diag:log.txt
       - run:
           working_directory: src/MicrosoftDI.AddXRefactoring.Package
           name: Pack roslyn code-refactoring
