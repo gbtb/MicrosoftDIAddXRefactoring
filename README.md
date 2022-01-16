@@ -25,6 +25,6 @@ public static class Module
 * [x] Code Actions with AddSingleton|AddScoped|AddTransient methods with appropriate type parameters will be inferred from your class declaration.
 * [x] First base type in your class declaration will be used as a first type argument in extension method call.
 * [x] Code action will add registration onto first line of nearest registration method with separate statement `services.AddX<IFoo, Foo>();`.
+* [x] You can annotate method which follows convention, but you don't want to be considered as RegistrationMethod with `[IgnoreRegistrationMethod]` attribute.
+* [x] You can annotate method which does not follow convention, but you want it to be considered as RegistrationMethod with `[RegistrationMethod]` attribute.
 * [ ] Code action will add registration into `return services.AddX<Foo>().AddX<Bar>()` invocation chain.
-* [ ] You can annotate method which follows convention, but you don't want to be considered as RegistrationMethod with `[IgnoreRegistrationMethod]` attribute.
-* [ ] You can annotate method which does not follow convention, but you want it to be considered as RegistrationMethod with `[RegistrationMethod]` attribute.

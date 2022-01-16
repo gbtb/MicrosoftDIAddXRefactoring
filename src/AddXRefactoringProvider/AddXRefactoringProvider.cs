@@ -105,12 +105,13 @@ public class AddXRefactoringProvider: CodeRefactoringProvider
                     if (attribute.Name.ToString().Contains("RegistrationMethod"))
                         return decl;
                 }
-                Next:
-                    continue;
             }
 
             if (checkMethodSignature(decl))
                 return decl;
+            
+            Next:
+                continue;
         }
 
         return null;
