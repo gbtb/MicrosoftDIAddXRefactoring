@@ -2,7 +2,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
-    <Nullable>enable</Nullable>
+    <Nullable>disable</Nullable>
     <IsPackable>false</IsPackable>
     <LangVersion>10</LangVersion>
   </PropertyGroup>
@@ -13,7 +13,7 @@
     <PackageReference Include="coverlet.collector" Version="3.1.0" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\src\AddXRefactoringProvider\AddXRefactoringProvider.csproj" />
+    <ProjectReference Include="..\..\src\MicrosoftDI.AddXRefactoring\MicrosoftDI.AddXRefactoring.csproj" />
   </ItemGroup>
   <Import Project="..\..\.paket\Paket.Restore.targets" />
 </Project>

@@ -7,6 +7,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeRefactorings;
 using Microsoft.CodeAnalysis.Text;
+using MicrosoftDI.AddXRefactoringProvider;
 using NUnit.Framework;
 using RoslynTestKit;
 
@@ -414,6 +415,6 @@ namespace Lib
     protected override string LanguageName => LanguageNames.CSharp;
     protected override CodeRefactoringProvider CreateProvider()
     {
-        return new AddXRefactoringProvider.AddXRefactoringProvider();
+        return new AddXRefactoringProvider();
     }
 }

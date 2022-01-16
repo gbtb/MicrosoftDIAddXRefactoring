@@ -3,7 +3,7 @@ using Microsoft.CodeAnalysis.CodeRefactorings;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace AddXRefactoringProvider;
+namespace MicrosoftDI.AddXRefactoringProvider;
 
 [ExportCodeRefactoringProvider(LanguageNames.CSharp, Name = nameof(AddXRefactoringProvider))]
 public class AddXRefactoringProvider: CodeRefactoringProvider

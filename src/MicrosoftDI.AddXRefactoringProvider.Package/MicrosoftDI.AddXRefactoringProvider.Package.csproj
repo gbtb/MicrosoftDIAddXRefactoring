@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>netstandard2.0</TargetFramework>
+        <IncludeBuildOutput>false</IncludeBuildOutput>
+        <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <RootNamespace>AddXRefactoringProvider.Package</RootNamespace>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <Description>
+            Automatically adds Add(Singleton|Scoped|Transient) from your new class declaration into nearest DI registration point
+        </Description>
+        <PackageId>MicrosoftDI.AddXRefactoring</PackageId>
+        <DevelopmentDependency>true</DevelopmentDependency>
+        <NoPackageAnalysis>true</NoPackageAnalysis>
+        <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);_AddAnalyzersToOutput</TargetsForTfmSpecificContentInPackage>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="../MicrosoftDI.AddXRefactoring.Attributes/MicrosoftDI.AddXRefactoring.Attributes.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Update="tools\*.ps1" CopyToOutputDirectory="Always" Pack="true" PackagePath="" />
+    </ItemGroup>
+
+    <Target Name="_AddAnalyzersToOutput">
+        <ItemGroup>
+            <TfmSpecificPackageFile Include="$(OutputPath)\MicrosoftDI.AddXRefactoring.Attributes.dll" PackagePath="analyzers/dotnet/cs" />
+        </ItemGroup>
+    </Target>
+
+</Project>

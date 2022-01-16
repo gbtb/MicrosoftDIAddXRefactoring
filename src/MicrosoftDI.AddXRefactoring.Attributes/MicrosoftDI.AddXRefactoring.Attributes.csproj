@@ -2,10 +2,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>10</LangVersion>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <LangVersion>10</LangVersion>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <RootNamespace>MicrosoftDI.AddXRefactoring.Attributes</RootNamespace>
+  </PropertyGroup>
+  <PropertyGroup>
+    <Description>
+      Additional attributes for MicrosoftDI.AddXRefactoring
+    </Description>
   </PropertyGroup>
   <Import Project="..\..\.paket\Paket.Restore.targets" />
 </Project>

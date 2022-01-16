@@ -3,15 +3,16 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30114.105
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RuntimeDependencies", "src\RuntimeDependencies\RuntimeDependencies.csproj", "{173D4B10-E2A7-4E00-A295-F53A6F14E459}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MicrosoftDI.AddXRefactoring.Attributes", "src\MicrosoftDI.AddXRefactoring.Attributes\MicrosoftDI.AddXRefactoring.Attributes.csproj", "{173D4B10-E2A7-4E00-A295-F53A6F14E459}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AddXRefactoringProvider", "src\AddXRefactoringProvider\AddXRefactoringProvider.csproj", "{A8FFC472-9212-45A6-AE6B-ED149034B0B1}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MicrosoftDI.AddXRefactoring", "src\MicrosoftDI.AddXRefactoring\MicrosoftDI.AddXRefactoring.csproj", "{A8FFC472-9212-45A6-AE6B-ED149034B0B1}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SolutionFolder", "SolutionFolder", "{DBA46CAC-EFB3-4D9E-8C42-80FAF19F1714}"
 	ProjectSection(SolutionItems) = preProject
 		paket.lock = paket.lock
 		paket.dependencies = paket.dependencies
 		README.md = README.md
+		Directory.Build.props = Directory.Build.props
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AddXRefactoringTests", "tests\AddXRefactoringTests\AddXRefactoringTests.csproj", "{12ED5B53-ACAA-41C4-B8FC-070332CCB6C6}"
@@ -19,6 +20,8 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{31EB06FF-61DE-4FCD-8A35-701004B613A3}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{E91C513A-DAB8-4365-9925-D3E076DE768F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MicrosoftDI.AddXRefactoringProvider.Package", "src\MicrosoftDI.AddXRefactoringProvider.Package\MicrosoftDI.AddXRefactoringProvider.Package.csproj", "{311E39C4-88F6-4FA4-ADBA-109FF80302DC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -41,10 +44,15 @@ Global
 		{12ED5B53-ACAA-41C4-B8FC-070332CCB6C6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{12ED5B53-ACAA-41C4-B8FC-070332CCB6C6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{12ED5B53-ACAA-41C4-B8FC-070332CCB6C6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{311E39C4-88F6-4FA4-ADBA-109FF80302DC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{311E39C4-88F6-4FA4-ADBA-109FF80302DC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{311E39C4-88F6-4FA4-ADBA-109FF80302DC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{311E39C4-88F6-4FA4-ADBA-109FF80302DC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{A8FFC472-9212-45A6-AE6B-ED149034B0B1} = {31EB06FF-61DE-4FCD-8A35-701004B613A3}
 		{173D4B10-E2A7-4E00-A295-F53A6F14E459} = {31EB06FF-61DE-4FCD-8A35-701004B613A3}
 		{12ED5B53-ACAA-41C4-B8FC-070332CCB6C6} = {E91C513A-DAB8-4365-9925-D3E076DE768F}
+		{311E39C4-88F6-4FA4-ADBA-109FF80302DC} = {31EB06FF-61DE-4FCD-8A35-701004B613A3}
 	EndGlobalSection
 EndGlobal
