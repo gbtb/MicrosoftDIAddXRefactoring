@@ -40,7 +40,7 @@ jobs:
           working_directory: src/MicrosoftDI.AddXRefactoring.Attributes
           name: Pack roslyn code-refactoring
           command: |
-            dotnet pack -c release
+            dotnet build -c release
       - store_artifacts:
           path: src/nupkg
           destination: nuget_package
