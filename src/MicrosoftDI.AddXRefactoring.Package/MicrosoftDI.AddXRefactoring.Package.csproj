@@ -19,7 +19,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="../MicrosoftDI.AddXRefactoring/MicrosoftDI.AddXRefactoring.csproj" />
+        <ProjectReference Include="..\MicrosoftDI.AddXRefactoring.Provider\MicrosoftDI.AddXRefactoring.Provider.csproj" />
     </ItemGroup>
 
     <ItemGroup>
@@ -28,7 +28,7 @@
 
     <Target Name="_AddAnalyzersToOutput">
         <ItemGroup>
-            <TfmSpecificPackageFile Include="$(OutputPath)\MicrosoftDI.AddXRefactoring.dll" PackagePath="analyzers/dotnet/cs" />
+            <TfmSpecificPackageFile Include="$(OutputPath)\MicrosoftDI.AddXRefactoring.Provider.dll" PackagePath="analyzers/dotnet/cs" />
         </ItemGroup>
     </Target>
 

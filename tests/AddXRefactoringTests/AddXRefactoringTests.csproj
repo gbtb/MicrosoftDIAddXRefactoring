@@ -7,7 +7,7 @@
     <LangVersion>10</LangVersion>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\src\MicrosoftDI.AddXRefactoring\MicrosoftDI.AddXRefactoring.csproj" />
+    <ProjectReference Include="..\..\src\MicrosoftDI.AddXRefactoring.Provider\MicrosoftDI.AddXRefactoring.Provider.csproj" />
   </ItemGroup>
   <Import Project="..\..\.paket\Paket.Restore.targets" />
 </Project>

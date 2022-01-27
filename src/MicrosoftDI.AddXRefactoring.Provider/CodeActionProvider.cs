@@ -5,7 +5,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
-namespace MicrosoftDI.AddXRefactoringProvider;
+namespace MicrosoftDI.AddXRefactoring.Provider;
 
 public class CodeActionProvider
 {

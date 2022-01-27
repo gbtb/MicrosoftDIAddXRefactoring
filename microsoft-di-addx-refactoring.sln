@@ -5,7 +5,7 @@ VisualStudioVersion = 16.0.30114.105
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MicrosoftDI.AddXRefactoring.Attributes", "src\MicrosoftDI.AddXRefactoring.Attributes\MicrosoftDI.AddXRefactoring.Attributes.csproj", "{173D4B10-E2A7-4E00-A295-F53A6F14E459}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MicrosoftDI.AddXRefactoring", "src\MicrosoftDI.AddXRefactoring\MicrosoftDI.AddXRefactoring.csproj", "{A8FFC472-9212-45A6-AE6B-ED149034B0B1}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MicrosoftDI.AddXRefactoring.Provider", "src\MicrosoftDI.AddXRefactoring.Provider\MicrosoftDI.AddXRefactoring.Provider.csproj", "{A8FFC472-9212-45A6-AE6B-ED149034B0B1}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SolutionFolder", "SolutionFolder", "{DBA46CAC-EFB3-4D9E-8C42-80FAF19F1714}"
 	ProjectSection(SolutionItems) = preProject
