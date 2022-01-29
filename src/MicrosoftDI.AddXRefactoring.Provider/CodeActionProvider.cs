@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeRefactorings;
@@ -21,11 +22,8 @@ public class CodeActionProvider
         MethodDeclarationSyntax registrationMethodDeclarationSyntax)
     {
         var serviceCollection = registrationMethodDeclarationSyntax.ParameterList.Parameters.First();
-        var possibleAddXInvocations = GetPossibleAddXInvocations(IdentifierName(serviceCollection.Identifier),
+         return GetPossibleAddXInvocations(registrationMethodDeclarationSyntax, IdentifierName(serviceCollection.Identifier),
             typeDeclarationSyntax);
-
-        return possibleAddXInvocations.Select(tuple =>
-            CodeAction.Create(tuple.actionTitle, CreateChangedSolution(registrationMethodDeclarationSyntax, tuple.invocationExpr)));
     }
 
     private Func<CancellationToken, Task<Solution>> CreateChangedSolution(
@@ -71,43 +69,66 @@ public class CodeActionProvider
         };
     }
 
-    private static IEnumerable<(string actionTitle, ExpressionStatementSyntax invocationExpr)> GetPossibleAddXInvocations(
-        ExpressionSyntax serviceCollection, 
-        BaseTypeDeclarationSyntax typeDeclarationSyntax)
+    private IEnumerable<CodeAction> GetPossibleAddXInvocations(MethodDeclarationSyntax registrationMethodDeclarationSyntax,
+            ExpressionSyntax serviceCollection,
+            BaseTypeDeclarationSyntax typeDeclarationSyntax)
     {
-        TypeArgumentListSyntax list;
+        TypeArgumentListSyntax mainList;
+        TypeArgumentListSyntax? additionalList;
         if (typeDeclarationSyntax.BaseList?.Types.FirstOrDefault()?.Type is NameSyntax firstBaseType)
         {
-            list = TypeArgumentList(
+            mainList = TypeArgumentList(
                 SeparatedList(new TypeSyntax[]
                 {
                     IdentifierName(firstBaseType.WithoutTrivia().ToString()),
                     IdentifierName(typeDeclarationSyntax.Identifier.WithoutTrivia())
                 })
             );
-        }
-        else
-        {
-            list = TypeArgumentList(
+            additionalList = TypeArgumentList(
                 SeparatedList(new TypeSyntax[]
                 {
                     IdentifierName(typeDeclarationSyntax.Identifier.WithoutTrivia())
                 })
             );
         }
+        else
+        {
+            mainList = TypeArgumentList(
+                SeparatedList(new TypeSyntax[]
+                {
+                    IdentifierName(typeDeclarationSyntax.Identifier.WithoutTrivia())
+                })
+            );
+            additionalList = default;
+        }
         
+        foreach (var codeAction in GenerateCodeActionsForMethods(registrationMethodDeclarationSyntax, serviceCollection, mainList)) 
+            yield return codeAction;
+
+        if (additionalList == null) 
+            yield break;
+        
+        var methods = GenerateCodeActionsForMethods(registrationMethodDeclarationSyntax, serviceCollection, additionalList);
+        yield return CodeAction.Create("Register with ...", methods.ToImmutableArray(), false);
+    }
+
+    private IEnumerable<CodeAction> GenerateCodeActionsForMethods(MethodDeclarationSyntax registrationMethodDeclarationSyntax,
+        ExpressionSyntax serviceCollection, TypeArgumentListSyntax argList)
+    {
         foreach (var addXMethodName in DefaultMethods)
         {
-            var methodCallName = GenericName(addXMethodName).WithTypeArgumentList(list);
+            var methodCallName = GenericName(addXMethodName).WithTypeArgumentList(argList);
             var codeActionTitle = $"Register with {methodCallName.ToFullString()}";
-            yield return (codeActionTitle, ExpressionStatement(
+
+            var syntax = ExpressionStatement(
                 InvocationExpression(
-                    MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, 
-                        serviceCollection, 
+                    MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                        serviceCollection,
                         methodCallName
                     ))
-                )
             );
+            yield return CodeAction.Create(codeActionTitle,
+                CreateChangedSolution(registrationMethodDeclarationSyntax, syntax));
         }
     }
 

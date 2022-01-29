@@ -37,7 +37,7 @@ public class AddXRefactoringProvider: CodeRefactoringProvider
                 folders.Pop();
             
             var method =
-                await ScanFolderForRegistrationMethodAsync(folders, context.Document.Project,
+                await ScanFolderForRegistrationMethodAsync(folders, context,
                     context.CancellationToken);
             
             if (method != null)
@@ -47,9 +47,9 @@ public class AddXRefactoringProvider: CodeRefactoringProvider
         return null;
     }
 
-    private static async Task<MethodDeclarationSyntax?> ScanFolderForRegistrationMethodAsync(IEnumerable<string> folders, Project project, CancellationToken token)
+    private static async Task<MethodDeclarationSyntax?> ScanFolderForRegistrationMethodAsync(IEnumerable<string> folders, CodeRefactoringContext context, CancellationToken token)
     {
-        var docs = project.Documents.Where(d => d.Folders.SequenceEqual(folders));
+        var docs = context.Document.Project.Documents.Where(d => d.Folders.SequenceEqual(folders) && d != context.Document);
         foreach (var doc in docs)
         {
             var root = await doc.GetSyntaxRootAsync(token);

@@ -414,6 +414,78 @@ namespace Lib
         Assert.That(array.IsEmpty, Is.True);
         
     }
+    
+    [Test]
+    public async Task RegisterInSameFolderWithInterface()
+    {
+        var workspace = new AdhocWorkspace();
+        var solution = workspace.AddSolution(SolutionInfo.Create(SolutionId.CreateNewId(), VersionStamp.Default));
+        var libProject = workspace.AddProject(ProjectInfo.Create(ProjectId.CreateNewId(), VersionStamp.Default, "Lib", "Lib", LanguageNames.CSharp));
+
+        var sourceText = @"
+                using System;
+                namespace Lib 
+                {
+                    [|public class Foo|]: IFoo
+                    {
+                        public int Prop { get; set; }
+                    }
+
+                    public class Bar 
+                    {
+                       public int Prop { get; set; }
+                    }
+                }
+            ";
+        
+        var registrationMethod = SourceText.From(@"
+using System;
+namespace Lib 
+{
+    public static class Registrator 
+    {
+        public static IServiceCollection RegisterServices(this IServiceCollection services)
+        {
+            return services;
+        }
+    }
+}
+            ");
+        
+        var expectedRegistrationMethod = @"
+using System;
+namespace Lib 
+{
+    public static class Registrator 
+    {
+        public static IServiceCollection RegisterServices(this IServiceCollection services)
+        {
+            services.AddSingleton<IFoo, Foo>();
+            return services;
+        }
+    }
+}
+            ";
+
+        var markup = new CodeMarkup(sourceText);
+        var doc = libProject.AddDocument("Lib.cs", SourceText.From(markup.Code), new string[] {});
+        libProject = doc.Project;
+        var registrationDoc = libProject.AddDocument("Registrator.cs", registrationMethod, new string[] {});
+        libProject = registrationDoc.Project;
+
+        var builder = ImmutableArray.CreateBuilder<CodeAction>();
+        doc = libProject.GetDocument(doc.Id);
+        
+        var context = new CodeRefactoringContext(doc, markup.Locator.GetSpan(), a => builder.Add(a), CancellationToken.None);
+        await CreateProvider().ComputeRefactoringsAsync(context);
+        var array = builder.ToImmutable();
+        
+        Assert.IsFalse(array.IsEmpty);
+        Assert.That(array.Length, Is.EqualTo(4));
+        Assert.That(array[3].Title, Is.EqualTo("Register with ..."));
+        
+        Verify.CodeAction(array[0], registrationDoc, expectedRegistrationMethod);
+    }
 
     protected override string LanguageName => LanguageNames.CSharp;
     protected override CodeRefactoringProvider CreateProvider()
