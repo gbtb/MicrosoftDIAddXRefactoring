@@ -204,7 +204,8 @@ namespace Lib
         var array = builder.ToImmutable();
         
         Assert.IsFalse(array.IsEmpty);
-        Assert.AreEqual(3, array.Length);
+        Assert.That(array.Length, Is.EqualTo(4));
+        Assert.That(array[3].Title, Is.EqualTo("Register with ..."));
         
         Verify.CodeAction(array[1], registrationDoc, expectedRegistrationMethod);
     }
