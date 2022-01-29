@@ -5,5 +5,6 @@ framework: netstandard2.0, net6.0
 nuget Microsoft.CodeAnalysis.CSharp.Workspaces
 nuget Microsoft.NET.Test.Sdk
 nuget Nunit
+nuget NUnit.Analyzers
 nuget NUnit3TestAdapter
 nuget SmartAnalyzers.RoslynTestKit

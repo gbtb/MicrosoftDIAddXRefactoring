@@ -98,20 +98,20 @@ public class CodeActionProvider
         
         foreach (var addXMethodName in DefaultMethods)
         {
-            yield return (addXMethodName, ExpressionStatement(
+            var methodCallName = GenericName(addXMethodName).WithTypeArgumentList(list);
+            var codeActionTitle = $"Register with {methodCallName.ToFullString()}";
+            yield return (codeActionTitle, ExpressionStatement(
                 InvocationExpression(
                     MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, 
                         serviceCollection, 
-                        GenericName(addXMethodName)
-                            .WithTypeArgumentList(list)
+                        methodCallName
                     ))
                 )
             );
         }
     }
 
-    private static string[] DefaultMethods = new[]
-    {
+    private static string[] DefaultMethods = {
         "AddSingleton",
         "AddScoped",
         "AddTransient"

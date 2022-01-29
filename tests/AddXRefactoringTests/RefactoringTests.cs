@@ -246,8 +246,11 @@ namespace Lib
         await CreateProvider().ComputeRefactoringsAsync(context);
         var array = builder.ToImmutable();
         
-        Assert.IsFalse(array.IsEmpty);
-        Assert.AreEqual(3, array.Length);
+        Assert.That(array.IsEmpty, Is.False);
+        Assert.That(array.Length, Is.EqualTo(3));
+        Assert.That(array[0].Title, Is.EqualTo("Register with AddSingleton<Bar>"));
+        Assert.That(array[1].Title, Is.EqualTo("Register with AddScoped<Bar>"));
+        Assert.That(array[2].Title, Is.EqualTo("Register with AddTransient<Bar>"));
         
         Verify.CodeAction(array[2], registrationDoc, expectedRegistrationMethod);
     }
@@ -408,7 +411,7 @@ namespace Lib
         await CreateProvider().ComputeRefactoringsAsync(context);
         var array = builder.ToImmutable();
         
-        Assert.IsTrue(array.IsEmpty);
+        Assert.That(array.IsEmpty, Is.True);
         
     }
 
