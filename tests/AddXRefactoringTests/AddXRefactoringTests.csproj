@@ -5,9 +5,13 @@
     <Nullable>disable</Nullable>
     <IsPackable>false</IsPackable>
     <LangVersion>10</LangVersion>
+    <DisableMSBuildAssemblyCopyCheck>true</DisableMSBuildAssemblyCopyCheck>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\MicrosoftDI.AddXRefactoring.Provider\MicrosoftDI.AddXRefactoring.Provider.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+<!--    <PackageReference Include="Microsoft.Build.Locator" Version="1.4.1" ExcludeAssets="runtime" />-->
   </ItemGroup>
   <Import Project="..\..\.paket\Paket.Restore.targets" />
 </Project>
