@@ -42,11 +42,12 @@ public class FunctionalTests: CodeRefactoringTestFixture
     }
     
     [Test]
+    [Ignore("Insert real file path")]
     public async Task TestWebsales()
     {
         var workspace = MSBuildWorkspace.Create();
         var project =
-            await workspace.OpenProjectAsync("/home/artem/Work/websales-git/Dns.Core/Dns.Core.csproj");
+            await workspace.OpenProjectAsync("");
 
         var doc = project.Documents.First(d => d.Name == "AspNetMailSettings.cs");
         var builder = ImmutableArray.CreateBuilder<CodeAction>();

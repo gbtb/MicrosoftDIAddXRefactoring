@@ -68,9 +68,9 @@ namespace Lib
             ";
 
         var markup = new CodeMarkup(sourceText);
-        var doc = libProject.AddDocument("Lib.cs", SourceText.From(markup.Code), new string[] {});
+        var doc = libProject.AddDocument("Lib.cs", SourceText.From(markup.Code), filePath: "Lib.cs");
         libProject = doc.Project;
-        var registrationDoc = libProject.AddDocument("Registrator.cs", registrationMethod, new string[] {});
+        var registrationDoc = libProject.AddDocument("Registrator.cs", registrationMethod, filePath: "Registrator.cs");
         libProject = registrationDoc.Project;
 
         var builder = ImmutableArray.CreateBuilder<CodeAction>();
@@ -139,9 +139,9 @@ namespace Lib
             ";
 
         var markup = new CodeMarkup(sourceText);
-        var doc = libProject.AddDocument("Lib.cs", SourceText.From(markup.Code), new [] {"Top", "Nested"});
+        var doc = libProject.AddDocument("Lib.cs", SourceText.From(markup.Code), filePath: "Top/Nested/Lib.cs");
         libProject = doc.Project;
-        var registrationDoc = libProject.AddDocument("Registrator.cs", registrationMethod, new [] {"Top"});
+        var registrationDoc = libProject.AddDocument("Registrator.cs", registrationMethod, filePath: "Top/Registrator.cs");
         libProject = registrationDoc.Project;
 
         var builder = ImmutableArray.CreateBuilder<CodeAction>();
@@ -234,9 +234,9 @@ namespace Lib
             ";
 
         var markup = new CodeMarkup(sourceText);
-        var doc = libProject.AddDocument("Lib.cs", SourceText.From(markup.Code), new [] {"Top", "Nested"});
+        var doc = libProject.AddDocument("Lib.cs", SourceText.From(markup.Code), filePath: "Top/Nested/Lib.cs");
         libProject = doc.Project;
-        var registrationDoc = libProject.AddDocument("Startup.cs", registrationMethod, new string[] {});
+        var registrationDoc = libProject.AddDocument("Startup.cs", registrationMethod, filePath: "Startup.cs");
         libProject = registrationDoc.Project;
 
         var builder = ImmutableArray.CreateBuilder<CodeAction>();
@@ -296,9 +296,9 @@ namespace Lib
 
         var markup = new CodeMarkup(sourceText);
 
-        var doc = libProject.AddDocument("Lib.cs", SourceText.From(markup.Code), new [] {"Top", "Lib"});
+        var doc = libProject.AddDocument("Lib.cs", SourceText.From(markup.Code), filePath: "Top/Lib/Lib.cs");
         libProject = doc.Project;
-        var registrationDoc = libProject.AddDocument("Registrator.cs", registrationMethod, new [] {"Top", "Nested"});
+        var registrationDoc = libProject.AddDocument("Registrator.cs", registrationMethod, filePath: "Top/Nested/Registrator.cs");
         libProject = registrationDoc.Project;
 
         var builder = ImmutableArray.CreateBuilder<CodeAction>();
@@ -399,9 +399,9 @@ namespace Lib
             ");
         
         var markup = new CodeMarkup(sourceText);
-        var doc = libProject.AddDocument("Lib.cs", SourceText.From(markup.Code), new [] {"Top", "Nested"});
+        var doc = libProject.AddDocument("Lib.cs", SourceText.From(markup.Code), filePath: "Top/Nested/Lib.cs");
         libProject = doc.Project;
-        var registrationDoc = libProject.AddDocument("Registrator.cs", registrationMethod, new [] {"Top"});
+        var registrationDoc = libProject.AddDocument("Registrator.cs", registrationMethod, filePath: "Top/Registrator.cs");
         libProject = registrationDoc.Project;
 
         var builder = ImmutableArray.CreateBuilder<CodeAction>();

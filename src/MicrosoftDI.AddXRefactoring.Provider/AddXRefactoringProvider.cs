@@ -28,28 +28,27 @@ public class AddXRefactoringProvider: CodeRefactoringProvider
 
     private static async Task<MethodDeclarationSyntax?> FindNearestRegistrationMethodAsync(CodeRefactoringContext context)
     {
-        var folders = new Stack<string>(context.Document.Folders);
-        folders.Push("");
+        var docPath = context.Document.FilePath;
+        var docDir = Path.GetDirectoryName(docPath);
 
-        do
-        {
-            if (folders.Count > 0)
-                folders.Pop();
-            
-            var method =
-                await ScanFolderForRegistrationMethodAsync(folders, context,
-                    context.CancellationToken);
-            
-            if (method != null)
-                return method;
-        } while (folders.Any());
+        if (docDir == null) 
+            return null;
+        
+        var method =
+            await ScanFolderForRegistrationMethodAsync(docDir, context,
+                context.CancellationToken);
 
-        return null;
+        return method;
     }
 
-    private static async Task<MethodDeclarationSyntax?> ScanFolderForRegistrationMethodAsync(IEnumerable<string> folders, CodeRefactoringContext context, CancellationToken token)
+    private static async Task<MethodDeclarationSyntax?> ScanFolderForRegistrationMethodAsync(string folders, CodeRefactoringContext context, CancellationToken token)
     {
-        var docs = context.Document.Project.Documents.Where(d => d.Folders.SequenceEqual(folders) && d != context.Document);
+        var docs = context.Document.Project.Documents.Where(d =>
+        {
+            var dirs = Path.GetDirectoryName(d.FilePath);
+            return dirs != null && folders.Contains(dirs) && context.Document.Id != d.Id;
+        });
+        
         foreach (var doc in docs)
         {
             var root = await doc.GetSyntaxRootAsync(token);
