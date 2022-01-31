@@ -24,12 +24,16 @@ public class UsingsProvider
     {
         NameSyntax? namespaceName = null;
 
-        foreach (var namespaceSymbol in typeNamespaceSymbol.ConstituentNamespaces)
+        
+        foreach (var part in typeNamespaceSymbol.ToDisplayParts())
         {
+            if (part.ToString() == ".")
+                continue;
+            
             if (namespaceName == null)
-                namespaceName = IdentifierName(namespaceSymbol.Name);
+                namespaceName = IdentifierName(part.ToString());
             else
-                namespaceName = QualifiedName(namespaceName, IdentifierName(namespaceSymbol.Name));
+                namespaceName = QualifiedName(namespaceName, IdentifierName(part.ToString()));
         }
 
         if (namespaceName != null)
