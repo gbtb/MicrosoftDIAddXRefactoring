@@ -18,7 +18,22 @@ public class AddXRefactoringProvider: CodeRefactoringProvider
         if (registrationMethod?.Body != null)
         {
             var provider = new CodeActionProvider(context);
-            var codeActions = provider.PrepareCodeActions(typeDeclaration, registrationMethod);
+            
+            var semanticModel = await context.Document.GetSemanticModelAsync(context.CancellationToken);
+            if (semanticModel == null)
+                return;
+            
+            var typeSymbol = ModelExtensions.GetDeclaredSymbol(semanticModel, typeDeclaration) as INamedTypeSymbol;
+            if (typeSymbol == null)
+                return;
+            
+            var typeNamespaceSymbol = typeSymbol.ContainingNamespace;
+            var baseNamespaceSymbol = typeSymbol.BaseType?.ContainingNamespace ??
+                                      typeSymbol.Interfaces.FirstOrDefault()?.ContainingNamespace;
+
+            var requiredUsings = UsingsProvider.GetUsings(typeNamespaceSymbol, baseNamespaceSymbol);
+            
+            var codeActions = provider.PrepareCodeActions(typeDeclaration, registrationMethod, requiredUsings);
             foreach (var codeAction in codeActions)
             {
                 context.RegisterRefactoring(codeAction);
@@ -35,8 +50,7 @@ public class AddXRefactoringProvider: CodeRefactoringProvider
             return null;
         
         var method =
-            await ScanFolderForRegistrationMethodAsync(docDir, context,
-                context.CancellationToken);
+            await ScanFolderForRegistrationMethodAsync(docDir, context, context.CancellationToken);
 
         return method;
     }
@@ -49,7 +63,8 @@ public class AddXRefactoringProvider: CodeRefactoringProvider
             return dirs != null && folders.Contains(dirs) && context.Document.Id != d.Id;
         });
         
-        foreach (var doc in docs)
+        //sorting by longest file path, longer path => closer file is to document which had triggered refactoring
+        foreach (var doc in docs.OrderByDescending(d => d.FilePath?.Length))
         {
             var root = await doc.GetSyntaxRootAsync(token);
             if (root == null)
