@@ -79,20 +79,14 @@ public class CodeActionProvider
             var methodCallName = GenericName(addXMethodName).WithTypeArgumentList(argList);
             var codeActionTitle = $"Register with {methodCallName.ToFullString()}";
 
-            var syntax = ExpressionStatement(
-                InvocationExpression(
-                    MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                        serviceCollection,
-                        methodCallName
-                    ))
-            );
             yield return CodeAction.Create(codeActionTitle,
-                CreateChangedSolution(registrationMethodDeclarationSyntax, syntax, usingDirectiveSyntaxes));
+                CreateChangedSolution(registrationMethodDeclarationSyntax, methodCallName, serviceCollection, usingDirectiveSyntaxes));
         }
     }
     
     private Func<CancellationToken, Task<Solution>> CreateChangedSolution(MethodDeclarationSyntax registrationMethod,
-        ExpressionStatementSyntax addXExpr, List<UsingDirectiveSyntax> usingDirectiveSyntaxes)
+        GenericNameSyntax methodCallName, ExpressionSyntax serviceCollection,
+        List<UsingDirectiveSyntax> usingDirectiveSyntaxes)
     {
         return async token =>
         {
@@ -114,10 +108,28 @@ public class CodeActionProvider
                 leadingTrivia = r.Body.GetLeadingTrivia().Add(Whitespace(" "));
                 trailingTrivia = SyntaxTriviaList.Create(LineFeed);
             }
+
+            ReturnStatementSyntax? returnStatement = null;
+            foreach (var statementSyntax in r.Body.Statements)
+            {
+                if (statementSyntax is ReturnStatementSyntax ret)
+                    returnStatement = ret;
+            }
+
+            SyntaxList<StatementSyntax> statements;
+            if (returnStatement != null && ContainsAtLeastTwoInvocations(returnStatement))
+            {
+                statements = r.Body.Statements.Replace(returnStatement, AddIntoCallChain(returnStatement, methodCallName));
+            }
+            else if (returnStatement != null || r.Body.Statements.Any())
+                statements = r.Body!.Statements.Insert(0, 
+                    AddStandaloneCall(serviceCollection, methodCallName, leadingTrivia, trailingTrivia)
+                );
+            else
+                statements = r.Body!.Statements.Insert(0, 
+                    AddStandaloneCallWithReturn(serviceCollection, methodCallName, leadingTrivia, trailingTrivia)
+                );
             
-            var statements = r.Body!.Statements.Insert(0, 
-                addXExpr.WithLeadingTrivia(leadingTrivia).WithTrailingTrivia(trailingTrivia)
-            );
             var newMethodDecl = r.WithBody(r.Body.WithStatements(statements));
             
             var newRoot = root.ReplaceNode(registrationMethod, newMethodDecl);
@@ -126,6 +138,44 @@ public class CodeActionProvider
             
             return doc.Project.Solution.WithDocumentSyntaxRoot(doc.Id, newRoot);
         };
+    }
+
+    private StatementSyntax AddStandaloneCallWithReturn(ExpressionSyntax serviceCollection, GenericNameSyntax methodCallName, SyntaxTriviaList leadingTrivia, SyntaxTriviaList trailingTrivia)
+    {
+        var invocation = AddMethodInvocation(serviceCollection, methodCallName);
+        return ReturnStatement(invocation);
+    }
+
+    private StatementSyntax AddStandaloneCall(ExpressionSyntax serviceCollection, GenericNameSyntax methodCallName,
+        SyntaxTriviaList leadingTrivia,
+        SyntaxTriviaList trailingTrivia)
+    {
+        var syntax = ExpressionStatement(
+            AddMethodInvocation(serviceCollection, methodCallName)
+        );
+        return syntax.WithLeadingTrivia(leadingTrivia).WithTrailingTrivia(trailingTrivia);
+    }
+
+    private static InvocationExpressionSyntax AddMethodInvocation(ExpressionSyntax serviceCollection, GenericNameSyntax methodCallName)
+    {
+        return InvocationExpression(
+            MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                serviceCollection,
+                methodCallName
+            ));
+    }
+
+    private StatementSyntax AddIntoCallChain(ReturnStatementSyntax returnStatement, GenericNameSyntax methodCallName)
+    {
+        return returnStatement.WithExpression(
+            MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, returnStatement.Expression!, methodCallName)
+        );
+    }
+
+    private bool ContainsAtLeastTwoInvocations(ReturnStatementSyntax returnStatement)
+    {
+        return returnStatement.Expression is InvocationExpressionSyntax fistInvoke &&
+               fistInvoke.Expression is MemberAccessExpressionSyntax m && m.Expression is InvocationExpressionSyntax;
     }
 
     private SyntaxNode AddUsings(SyntaxNode newRoot, MethodDeclarationSyntax methodDeclarationSyntax,

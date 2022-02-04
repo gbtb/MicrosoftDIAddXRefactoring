@@ -113,7 +113,7 @@ namespace Lib
         [RegistrationMethod]
         public void RegisterServices(IServiceCollection foo)
         {
-         foo.AddScoped<Bar>();
+            return foo.AddScoped<Bar>();
         }
     }
 }
