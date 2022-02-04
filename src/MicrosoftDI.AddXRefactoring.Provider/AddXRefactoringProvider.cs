@@ -150,7 +150,7 @@ public class AddXRefactoringProvider: CodeRefactoringProvider
 
         var node = root?.FindToken(context.Span.Start).Parent;
         TypeDeclarationSyntax declaration;
-        if (node is TypeDeclarationSyntax decl)
+        if (node is TypeDeclarationSyntax decl && node is not InterfaceDeclarationSyntax)
             declaration = decl;
         // else if (node?.Parent is TypeDeclarationSyntax decl2)
         //     declaration = decl2;
@@ -158,7 +158,7 @@ public class AddXRefactoringProvider: CodeRefactoringProvider
             return null;
         
         //generics are harder, maybe later
-        if (declaration.Arity == 0 && declaration.Modifiers.IndexOf(SyntaxKind.StaticKeyword) < 0)
+        if (declaration.Arity == 0 && declaration.Modifiers.IndexOf(SyntaxKind.StaticKeyword) < 0) 
             return declaration;
 
         return null;

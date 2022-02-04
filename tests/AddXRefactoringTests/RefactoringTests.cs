@@ -523,7 +523,22 @@ namespace Lib
                        public int [|Prop|] { get; set; }
                     }
                 }
-            ").SetName("Using")
+            ").SetName("Using"),
+        new TestCaseData(@"
+                using System;
+                namespace Lib
+                {
+                    public [|interface|] Foo
+                    {
+                        public int Prop { get; set; }
+                    }
+
+                    public class Bar
+                    {
+                       public int Prop { get; set; }
+                    }
+                }
+            ").SetName("Interface decl")
     };
 
     [Test]
