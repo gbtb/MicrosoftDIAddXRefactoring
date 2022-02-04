@@ -1,6 +1,7 @@
+![Nuget](https://img.shields.io/nuget/v/MicrosoftDI.AddXRefactoring)
 # Microsoft DI AddX Refactoring Provider
 
-This project provides code refactoring, which automatically adds Add(Singleton|Scoped|Transient) from your new class declaration into nearest DI registration point.
+This project provides Roslyn code refactoring, which automatically adds Add(Singleton|Scoped|Transient) from your new class declaration into nearest DI registration point.
 It could be default ConfigureServices in Startup.cs, or your custom extension method analogous to it.
 
 ## Prerequisites
@@ -19,6 +20,8 @@ public static class Module
 ```
 
 ## Installation
+
+It can be installed in any project through [nuget package](https://www.nuget.org/packages/MicrosoftDI.AddXRefactoring/)
 
 ## Features
 
