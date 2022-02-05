@@ -29,3 +29,4 @@ public static class Module
 * [x] You can annotate method which does not follow convention, but you want it to be considered as RegistrationMethod with `[RegistrationMethod]` attribute.
 * [x] Add required using if it is not yet added
 * [ ] Code action will add registration into `return services.AddX<Foo>().AddX<Bar>()` invocation chain.
+* [ ] You can trigger refactoring on a specific item in your class' base list, and it will register method as such base.
