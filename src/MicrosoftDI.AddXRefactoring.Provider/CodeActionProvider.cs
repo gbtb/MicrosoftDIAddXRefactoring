@@ -127,7 +127,7 @@ public class CodeActionProvider
                 );
             else
                 statements = r.Body!.Statements.Insert(0, 
-                    AddStandaloneCallWithReturn(serviceCollection, methodCallName, leadingTrivia, trailingTrivia)
+                    AddStandaloneCallWithReturn(serviceCollection, methodCallName)
                 );
             
             var newMethodDecl = r.WithBody(r.Body.WithStatements(statements));
@@ -140,7 +140,7 @@ public class CodeActionProvider
         };
     }
 
-    private StatementSyntax AddStandaloneCallWithReturn(ExpressionSyntax serviceCollection, GenericNameSyntax methodCallName, SyntaxTriviaList leadingTrivia, SyntaxTriviaList trailingTrivia)
+    private StatementSyntax AddStandaloneCallWithReturn(ExpressionSyntax serviceCollection, GenericNameSyntax methodCallName)
     {
         var invocation = AddMethodInvocation(serviceCollection, methodCallName);
         return ReturnStatement(invocation);
@@ -167,9 +167,27 @@ public class CodeActionProvider
 
     private StatementSyntax AddIntoCallChain(ReturnStatementSyntax returnStatement, GenericNameSyntax methodCallName)
     {
-        return returnStatement.WithExpression(
-            MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, returnStatement.Expression!, methodCallName)
-        );
+        var (trailingTrivia, operatorToken) = ExtractTrivia(returnStatement);
+
+        var memberAccess = MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                returnStatement.Expression!.WithTrailingTrivia(trailingTrivia), methodCallName)
+            .WithOperatorToken(operatorToken); //[....].AddX<IFoo, Foo>
+
+        var invocation = InvocationExpression(memberAccess);
+        
+        return returnStatement.WithExpression(invocation);
+    }
+
+    private (SyntaxTriviaList, SyntaxToken) ExtractTrivia(ReturnStatementSyntax returnStatement)
+    {
+        if (returnStatement.Expression is not InvocationExpressionSyntax {Expression: MemberAccessExpressionSyntax m})
+            return (SyntaxTriviaList.Empty, Token(SyntaxKind.DotToken));
+        
+        var operatorToken = m.OperatorToken;
+        var trailingTrivia = m.Expression.GetTrailingTrivia();
+
+        return (trailingTrivia, operatorToken);
+
     }
 
     private bool ContainsAtLeastTwoInvocations(ReturnStatementSyntax returnStatement)
