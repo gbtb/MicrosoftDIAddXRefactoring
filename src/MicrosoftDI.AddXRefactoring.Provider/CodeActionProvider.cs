@@ -17,34 +17,34 @@ public class CodeActionProvider
         _context = context;
     }
     
-    public IEnumerable<CodeAction> PrepareCodeActions(TypeDeclarationSyntax typeDeclarationSyntax,
+    public IEnumerable<CodeAction> PrepareCodeActions(RefactoringContext refactoringContext,
         MethodDeclarationSyntax registrationMethodDeclarationSyntax, List<UsingDirectiveSyntax> usingDirectiveSyntaxes)
     {
         var serviceCollection = registrationMethodDeclarationSyntax.ParameterList.Parameters.First();
          return GetPossibleAddXInvocations(registrationMethodDeclarationSyntax, IdentifierName(serviceCollection.Identifier),
-            typeDeclarationSyntax, usingDirectiveSyntaxes);
+            refactoringContext, usingDirectiveSyntaxes);
     }
 
     private IEnumerable<CodeAction> GetPossibleAddXInvocations(
         MethodDeclarationSyntax registrationMethodDeclarationSyntax,
         ExpressionSyntax serviceCollection,
-        BaseTypeDeclarationSyntax typeDeclarationSyntax, List<UsingDirectiveSyntax> usingDirectiveSyntaxes)
+        RefactoringContext refactoringContext, List<UsingDirectiveSyntax> usingDirectiveSyntaxes)
     {
         TypeArgumentListSyntax mainList;
         TypeArgumentListSyntax? additionalList;
-        if (typeDeclarationSyntax.BaseList?.Types.FirstOrDefault()?.Type is NameSyntax firstBaseType)
+        if (refactoringContext.SelectedBaseType is { Type: NameSyntax baseTypeName })
         {
             mainList = TypeArgumentList(
                 SeparatedList(new TypeSyntax[]
                 {
-                    IdentifierName(firstBaseType.WithoutTrivia().ToString()),
-                    IdentifierName(typeDeclarationSyntax.Identifier.WithoutTrivia())
+                    IdentifierName(baseTypeName.WithoutTrivia().ToString()),
+                    IdentifierName(refactoringContext.TypeToRegister.Identifier.WithoutTrivia())
                 })
             );
             additionalList = TypeArgumentList(
                 SeparatedList(new TypeSyntax[]
                 {
-                    IdentifierName(typeDeclarationSyntax.Identifier.WithoutTrivia())
+                    IdentifierName(refactoringContext.TypeToRegister.Identifier.WithoutTrivia())
                 })
             );
         }
@@ -53,7 +53,7 @@ public class CodeActionProvider
             mainList = TypeArgumentList(
                 SeparatedList(new TypeSyntax[]
                 {
-                    IdentifierName(typeDeclarationSyntax.Identifier.WithoutTrivia())
+                    IdentifierName(refactoringContext.TypeToRegister.Identifier.WithoutTrivia())
                 })
             );
             additionalList = default;
