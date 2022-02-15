@@ -26,10 +26,13 @@ It can be installed in any project through [nuget package](https://www.nuget.org
 ## Features
 
 * [x] Code Actions with AddSingleton|AddScoped|AddTransient methods with appropriate type parameters will be inferred from your class declaration.
-* [x] First base type in your class declaration will be used as a first type argument in extension method call.
-* [x] Code action will add registration onto first line of nearest registration method with separate statement `services.AddX<IFoo, Foo>();`.
+* [x] Exact signature of Add[X] will be inferred from position, where refactoring was triggered:
+  * If it was triggered on class name itself, then refactoring will register it as `AddX<ClassName>`
+  * If it was triggered on a base type or an interface of a class, then refactoring will register it as `Add[X]<BaseType, ClassName>`
+* [x] Refactoring will add registration into nearest RegistrationMethod using one of two heuristics:
+  * If RegistrationMethod body is empty or it does not contains chain calls with length greater than 1, then registration will be added onto first line  with separate statement `services.AddX<IFoo, Foo>();`
+  * If RegistrationMethod contains call chain of length greater than 1, then registration will be appended to that call chain
 * [x] You can annotate method which follows convention, but you don't want to be considered as RegistrationMethod with `[IgnoreRegistrationMethod]` attribute.
 * [x] You can annotate method which does not follow convention, but you want it to be considered as RegistrationMethod with `[RegistrationMethod]` attribute.
 * [x] Add required using if it is not yet added
 * [x] Code action will add registration into `return services.AddX<Foo>().AddX<Bar>()` invocation chain.
-* [ ] You can trigger refactoring on a specific item in your class' base list, and it will register method as such base.
