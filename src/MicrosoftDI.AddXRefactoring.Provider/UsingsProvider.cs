@@ -6,9 +6,9 @@ namespace MicrosoftDI.AddXRefactoring.Provider;
 
 public class UsingsProvider
 {
-    public static List<UsingDirectiveSyntax> GetUsings(INamespaceSymbol typeNamespaceSymbol, INamespaceSymbol? baseNamespaceSymbol)
+    public static ISet<UsingDirectiveSyntax> GetUsings(INamespaceSymbol typeNamespaceSymbol, INamespaceSymbol? baseNamespaceSymbol)
     {
-        var result = new List<UsingDirectiveSyntax>(2);
+        var result = new HashSet<UsingDirectiveSyntax>(new Comparer());
         
         if (!typeNamespaceSymbol.IsGlobalNamespace)
             GetUsingSyntax(typeNamespaceSymbol, result);
@@ -20,7 +20,7 @@ public class UsingsProvider
     }
 
     private static void GetUsingSyntax(INamespaceSymbol typeNamespaceSymbol,
-        List<UsingDirectiveSyntax> result)
+        HashSet<UsingDirectiveSyntax> result)
     {
         NameSyntax? namespaceName = null;
 
@@ -38,5 +38,23 @@ public class UsingsProvider
 
         if (namespaceName != null)
             result.Add(UsingDirective(namespaceName));
+    }
+
+    private class Comparer : IEqualityComparer<UsingDirectiveSyntax>
+    {
+        public bool Equals(UsingDirectiveSyntax? x, UsingDirectiveSyntax? y)
+        {
+            if (ReferenceEquals(x, y)) return true;
+            if (ReferenceEquals(x, null)) return false;
+            if (ReferenceEquals(y, null)) return false;
+            if (x.GetType() != y.GetType()) return false;
+            
+            return AreEquivalent(x, y);
+        }
+
+        public int GetHashCode(UsingDirectiveSyntax obj)
+        {
+            return obj.Name.ToFullString().GetHashCode();
+        }
     }
 }

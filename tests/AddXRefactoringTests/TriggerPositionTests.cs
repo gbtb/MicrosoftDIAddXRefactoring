@@ -85,7 +85,7 @@ namespace Space.Station
         var array = builder.ToImmutable();
         
         Assert.IsFalse(array.IsEmpty);
-        //Assert.AreEqual(4, array.Length);
+        Assert.AreEqual(3, array.Length);
         
         Verify.CodeAction(array[1], registrationDoc, expectedRegistrationMethod);
     }
@@ -112,7 +112,7 @@ namespace Space.Station
                         public int Prop { get; set; }
                     }
 
-                    public [|class Bar|]: Foo, IFoo 
+                    public class Bar: [|Foo|], IFoo 
                     {
                        public int Prop { get; set; }
                     }
@@ -162,7 +162,7 @@ namespace Space.Station
         var array = builder.ToImmutable();
         
         Assert.IsFalse(array.IsEmpty);
-        Assert.AreEqual(4, array.Length);
+        Assert.AreEqual(3, array.Length);
         
         Verify.CodeAction(array[0], registrationDoc, expectedRegistrationMethod);
     }
@@ -239,7 +239,7 @@ namespace Space.Station
         var array = builder.ToImmutable();
         
         Assert.IsFalse(array.IsEmpty);
-        Assert.AreEqual(4, array.Length);
+        Assert.AreEqual(3, array.Length);
         
         Verify.CodeAction(array[2], registrationDoc, expectedRegistrationMethod);
     }

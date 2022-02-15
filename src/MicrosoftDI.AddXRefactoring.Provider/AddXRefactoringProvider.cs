@@ -154,29 +154,19 @@ public class AddXRefactoringProvider: CodeRefactoringProvider
     {
         var root = await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
 
+        var walker = new TriggerLocationSyntaxWalker();
+        
         var triggerToken = root?.FindToken(context.Span.Start);
         var node = triggerToken?.Parent;
-        TypeDeclarationSyntax declaration;
-        if (node is TypeDeclarationSyntax decl && node is not InterfaceDeclarationSyntax)
-            declaration = decl;
-        // else if (node?.Parent is TypeDeclarationSyntax decl2)
-        //     declaration = decl2;
-        else
+        walker.Visit(node);
+
+        if (walker.TypeDeclarationSyntax == null)
             return null;
-        
-        //if (triggerToken is BaseTypeSyntax bt)
         
         //generics are harder, maybe later
-        if (declaration.Arity != 0 || declaration.Modifiers.IndexOf(SyntaxKind.StaticKeyword) >= 0)
+        if (walker.TypeDeclarationSyntax.Arity != 0 || walker.TypeDeclarationSyntax.Modifiers.IndexOf(SyntaxKind.StaticKeyword) >= 0)
             return null;
 
-        var bt = triggerToken?.Parent as BaseTypeSyntax;
-        if (bt != null)
-        {
-            return new RefactoringContext(declaration, bt);
-        }
-        
-        return new RefactoringContext(declaration, null);
-
+        return new RefactoringContext(walker.TypeDeclarationSyntax, walker.BaseType);
     }
 }

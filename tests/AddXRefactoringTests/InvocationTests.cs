@@ -134,7 +134,7 @@ namespace Lib
         {
             return services.AddSingleton<Test1>()
                 .AddScoped<ITest2, Test2>()
-                .AddTransient<IFoo, Foo>();
+                .AddTransient<Foo>();
         }
     }
 }
@@ -154,7 +154,7 @@ namespace Lib
         var array = builder.ToImmutable();
         
         Assert.IsFalse(array.IsEmpty);
-        Assert.That(array.Length, Is.EqualTo(4));
+        Assert.That(array.Length, Is.EqualTo(3));
         
         Verify.CodeAction(array[2], registrationDoc, expectedRegistrationMethod);
     }
@@ -204,7 +204,7 @@ namespace Lib
     {
         public static IServiceCollection RegisterServices(this IServiceCollection services)
         {
-            return services.AddTransient<IFoo, Foo>();
+            return services.AddTransient<Foo>();
         }
     }
 }
@@ -224,7 +224,7 @@ namespace Lib
         var array = builder.ToImmutable();
         
         Assert.IsFalse(array.IsEmpty);
-        Assert.That(array.Length, Is.EqualTo(4));
+        Assert.That(array.Length, Is.EqualTo(3));
         
         Verify.CodeAction(array[2], registrationDoc, expectedRegistrationMethod);
     }
