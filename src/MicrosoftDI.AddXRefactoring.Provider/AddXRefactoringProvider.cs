@@ -10,8 +10,8 @@ public class AddXRefactoringProvider: CodeRefactoringProvider
 {
     public override async Task ComputeRefactoringsAsync(CodeRefactoringContext context)
     {
-        var typeDeclaration = await TryGetValidSyntaxToSuggestRefactoringAsync(context);
-        if (typeDeclaration == null)
+        var refactoringContext = await TryGetValidSyntaxToSuggestRefactoringAsync(context);
+        if (refactoringContext == null)
             return;
 
         var registrationMethod = await FindNearestRegistrationMethodAsync(context);
@@ -22,18 +22,24 @@ public class AddXRefactoringProvider: CodeRefactoringProvider
             var semanticModel = await context.Document.GetSemanticModelAsync(context.CancellationToken);
             if (semanticModel == null)
                 return;
-            
-            var typeSymbol = ModelExtensions.GetDeclaredSymbol(semanticModel, typeDeclaration) as INamedTypeSymbol;
-            if (typeSymbol == null)
+
+            if (ModelExtensions.GetDeclaredSymbol(semanticModel, refactoringContext.TypeToRegister) is not INamedTypeSymbol typeSymbol)
                 return;
             
             var typeNamespaceSymbol = typeSymbol.ContainingNamespace;
-            var baseNamespaceSymbol = typeSymbol.BaseType?.ContainingNamespace ??
-                                      typeSymbol.Interfaces.FirstOrDefault()?.ContainingNamespace;
+            INamespaceSymbol? baseNamespaceSymbol = null;
+            if (refactoringContext.SelectedBaseType is {Type: NameSyntax name})
+            {
+                if (typeSymbol.BaseType?.Name == name.ToString())
+                    baseNamespaceSymbol = typeSymbol.BaseType?.ContainingNamespace;
+
+                if (typeSymbol.Interfaces.FirstOrDefault(i => i.Name == name.ToString()) is { } symbol)
+                    baseNamespaceSymbol = symbol.ContainingNamespace;;
+            }
 
             var requiredUsings = UsingsProvider.GetUsings(typeNamespaceSymbol, baseNamespaceSymbol);
             
-            var codeActions = provider.PrepareCodeActions(typeDeclaration, registrationMethod, requiredUsings);
+            var codeActions = provider.PrepareCodeActions(refactoringContext, registrationMethod, requiredUsings);
             foreach (var codeAction in codeActions)
             {
                 context.RegisterRefactoring(codeAction);
@@ -144,23 +150,23 @@ public class AddXRefactoringProvider: CodeRefactoringProvider
         return type is IdentifierNameSyntax { Identifier.Text: "IServiceCollection"};
     }
 
-    private static async Task<TypeDeclarationSyntax?> TryGetValidSyntaxToSuggestRefactoringAsync(CodeRefactoringContext context)
+    private static async Task<RefactoringContext?> TryGetValidSyntaxToSuggestRefactoringAsync(CodeRefactoringContext context)
     {
         var root = await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
 
-        var node = root?.FindToken(context.Span.Start).Parent;
-        TypeDeclarationSyntax declaration;
-        if (node is TypeDeclarationSyntax decl && node is not InterfaceDeclarationSyntax)
-            declaration = decl;
-        // else if (node?.Parent is TypeDeclarationSyntax decl2)
-        //     declaration = decl2;
-        else
+        var walker = new TriggerLocationSyntaxWalker();
+        
+        var triggerToken = root?.FindToken(context.Span.Start);
+        var node = triggerToken?.Parent;
+        walker.Visit(node);
+
+        if (walker.TypeDeclarationSyntax == null)
             return null;
         
         //generics are harder, maybe later
-        if (declaration.Arity == 0 && declaration.Modifiers.IndexOf(SyntaxKind.StaticKeyword) < 0) 
-            return declaration;
+        if (walker.TypeDeclarationSyntax.Arity != 0 || walker.TypeDeclarationSyntax.Modifiers.IndexOf(SyntaxKind.StaticKeyword) >= 0)
+            return null;
 
-        return null;
+        return new RefactoringContext(walker.TypeDeclarationSyntax, walker.BaseType);
     }
 }

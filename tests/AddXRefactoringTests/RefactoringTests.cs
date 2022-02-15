@@ -13,7 +13,7 @@ using RoslynTestKit;
 
 namespace AddXRefactoringTests;
 
-public class Tests: CodeRefactoringTestFixture
+public partial class Tests
 {
     [Test]
     public async Task RegisterInSameFolder()
@@ -226,83 +226,6 @@ namespace Lib
         
         Assert.IsFalse(array.IsEmpty);
         Assert.AreEqual(3, array.Length);
-        
-        Verify.CodeAction(array[1], registrationDoc, expectedRegistrationMethod);
-    }
-    
-    [Test]
-    public async Task RegisterInUpperFolderTopLevelNamespaceRequiredNoUsing()
-    {
-        var workspace = new AdhocWorkspace();
-        var solution = workspace.AddSolution(SolutionInfo.Create(SolutionId.CreateNewId(), VersionStamp.Default));
-        var libProject = workspace.AddProject(ProjectInfo.Create(ProjectId.CreateNewId(), VersionStamp.Default, "Lib", "Lib", LanguageNames.CSharp));
-
-        var sourceText = @"
-                using System;
-
-                namespace Space 
-                {
-                    public interface IFoo {}
-                }
-
-                namespace Space.Station
-                {
-                    public class Foo
-                    {
-                        public int Prop { get; set; }
-                    }
-
-                    [|public class Bar|]: IFoo 
-                    {
-                       public int Prop { get; set; }
-                    }
-                }
-            ";
-        
-        var registrationMethod = SourceText.From(@"
-using System;
-namespace Space.Station
-{
-    public static class Registrator 
-    {
-        public static IServiceCollection RegisterServices(this IServiceCollection services)
-        {
-            return services;
-        }
-    }
-}
-            ");
-        
-        var expectedRegistrationMethod = @"
-using System;
-namespace Space.Station
-{
-    public static class Registrator 
-    {
-        public static IServiceCollection RegisterServices(this IServiceCollection services)
-        {
-            services.AddScoped<IFoo, Bar>();
-            return services;
-        }
-    }
-}
-            ";
-
-        var markup = new CodeMarkup(sourceText);
-        var doc = libProject.AddDocument("Lib.cs", SourceText.From(markup.Code), filePath: "Top/Nested/Lib.cs");
-        libProject = doc.Project;
-        var registrationDoc = libProject.AddDocument("Registrator.cs", registrationMethod, filePath: "Top/Registrator.cs");
-        libProject = registrationDoc.Project;
-
-        var builder = ImmutableArray.CreateBuilder<CodeAction>();
-        doc = libProject.GetDocument(doc.Id);
-        
-        var context = new CodeRefactoringContext(doc, markup.Locator.GetSpan(), a => builder.Add(a), CancellationToken.None);
-        await CreateProvider().ComputeRefactoringsAsync(context);
-        var array = builder.ToImmutable();
-        
-        Assert.IsFalse(array.IsEmpty);
-        Assert.AreEqual(4, array.Length);
         
         Verify.CodeAction(array[1], registrationDoc, expectedRegistrationMethod);
     }
@@ -578,11 +501,5 @@ namespace Lib
         
         Assert.That(array.IsEmpty, Is.True);
         
-    }
-    
-    protected override string LanguageName => LanguageNames.CSharp;
-    protected override CodeRefactoringProvider CreateProvider()
-    {
-        return new AddXRefactoringProvider();
     }
 }

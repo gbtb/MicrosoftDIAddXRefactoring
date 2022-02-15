@@ -1,22 +1,20 @@
-using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeRefactorings;
 using Microsoft.CodeAnalysis.Text;
-using MicrosoftDI.AddXRefactoring.Provider;
 using NUnit.Framework;
 using RoslynTestKit;
 
 namespace AddXRefactoringTests;
 
-public class InvocationTests: CodeRefactoringTestFixture
+[TestFixture]
+public partial class Tests
 {
     [Test]
-    public async Task RegisterInSameFolder_SeparateStatements()
+    public async Task TriggerOnClass_ShouldRegisterOnlyImplType()
     {
         var workspace = new AdhocWorkspace();
         var solution = workspace.AddSolution(SolutionInfo.Create(SolutionId.CreateNewId(), VersionStamp.Default));
@@ -24,14 +22,20 @@ public class InvocationTests: CodeRefactoringTestFixture
 
         var sourceText = @"
                 using System;
-                namespace Lib 
+
+                namespace Space 
                 {
-                    [|public class Foo|]
+                    public interface IFoo {}
+                }
+
+                namespace Space.Station
+                {
+                    public class Foo
                     {
                         public int Prop { get; set; }
                     }
 
-                    public class Bar 
+                    [|public class Bar|]: Foo, IFoo 
                     {
                        public int Prop { get; set; }
                     }
@@ -40,13 +44,13 @@ public class InvocationTests: CodeRefactoringTestFixture
         
         var registrationMethod = SourceText.From(@"
 using System;
-namespace Lib 
+namespace Space.Station
 {
     public static class Registrator 
     {
         public static IServiceCollection RegisterServices(this IServiceCollection services)
         {
-            return services.AddSingleton<Test>();
+            return services;
         }
     }
 }
@@ -54,23 +58,100 @@ namespace Lib
         
         var expectedRegistrationMethod = @"
 using System;
-namespace Lib 
+namespace Space.Station
 {
     public static class Registrator 
     {
         public static IServiceCollection RegisterServices(this IServiceCollection services)
         {
-            services.AddSingleton<Foo>();
-            return services.AddSingleton<Test>();
+            services.AddScoped<Bar>();
+            return services;
         }
     }
 }
             ";
 
         var markup = new CodeMarkup(sourceText);
-        var doc = libProject.AddDocument("Lib.cs", SourceText.From(markup.Code), filePath: "Lib.cs");
+        var doc = libProject.AddDocument("Lib.cs", SourceText.From(markup.Code), filePath: "Top/Nested/Lib.cs");
         libProject = doc.Project;
-        var registrationDoc = libProject.AddDocument("Registrator.cs", registrationMethod, filePath: "Registrator.cs");
+        var registrationDoc = libProject.AddDocument("Registrator.cs", registrationMethod, filePath: "Top/Registrator.cs");
+        libProject = registrationDoc.Project;
+
+        var builder = ImmutableArray.CreateBuilder<CodeAction>();
+        doc = libProject.GetDocument(doc.Id);
+        
+        var context = new CodeRefactoringContext(doc, markup.Locator.GetSpan(), a => builder.Add(a), CancellationToken.None);
+        await CreateProvider().ComputeRefactoringsAsync(context);
+        var array = builder.ToImmutable();
+        
+        Assert.IsFalse(array.IsEmpty);
+        Assert.AreEqual(3, array.Length);
+        
+        Verify.CodeAction(array[1], registrationDoc, expectedRegistrationMethod);
+    }
+    
+    [Test]
+    public async Task TriggerOnBaseClass_ShouldRegisterImplTypeAsBase()
+    {
+        var workspace = new AdhocWorkspace();
+        var solution = workspace.AddSolution(SolutionInfo.Create(SolutionId.CreateNewId(), VersionStamp.Default));
+        var libProject = workspace.AddProject(ProjectInfo.Create(ProjectId.CreateNewId(), VersionStamp.Default, "Lib", "Lib", LanguageNames.CSharp));
+
+        var sourceText = @"
+                using System;
+
+                namespace Space 
+                {
+                    public interface IFoo {}
+                }
+
+                namespace Space.Station
+                {
+                    public class Foo
+                    {
+                        public int Prop { get; set; }
+                    }
+
+                    public class Bar: [|Foo|], IFoo 
+                    {
+                       public int Prop { get; set; }
+                    }
+                }
+            ";
+        
+        var registrationMethod = SourceText.From(@"
+using System;
+namespace Space.Station
+{
+    public static class Registrator 
+    {
+        public static IServiceCollection RegisterServices(this IServiceCollection services)
+        {
+            return services;
+        }
+    }
+}
+            ");
+        
+        var expectedRegistrationMethod = @"
+using System;
+namespace Space.Station
+{
+    public static class Registrator 
+    {
+        public static IServiceCollection RegisterServices(this IServiceCollection services)
+        {
+            services.AddSingleton<Foo, Bar>();
+            return services;
+        }
+    }
+}
+            ";
+
+        var markup = new CodeMarkup(sourceText);
+        var doc = libProject.AddDocument("Lib.cs", SourceText.From(markup.Code), filePath: "Top/Nested/Lib.cs");
+        libProject = doc.Project;
+        var registrationDoc = libProject.AddDocument("Registrator.cs", registrationMethod, filePath: "Top/Registrator.cs");
         libProject = registrationDoc.Project;
 
         var builder = ImmutableArray.CreateBuilder<CodeAction>();
@@ -87,7 +168,7 @@ namespace Lib
     }
     
     [Test]
-    public async Task RegisterInSameFolder_InvocationChain()
+    public async Task TriggerOnImplInterface_ShouldRegisterImplTypeAsInterface()
     {
         var workspace = new AdhocWorkspace();
         var solution = workspace.AddSolution(SolutionInfo.Create(SolutionId.CreateNewId(), VersionStamp.Default));
@@ -95,14 +176,20 @@ namespace Lib
 
         var sourceText = @"
                 using System;
-                namespace Lib 
+
+                namespace Space 
                 {
-                    [|public class Foo|]: IFoo, IBar
+                    public interface IFoo {}
+                }
+
+                namespace Space.Station
+                {
+                    public class Foo
                     {
                         public int Prop { get; set; }
                     }
 
-                    public class Bar 
+                    public class Bar: Foo, [|IFoo|] 
                     {
                        public int Prop { get; set; }
                     }
@@ -111,14 +198,13 @@ namespace Lib
         
         var registrationMethod = SourceText.From(@"
 using System;
-namespace Lib 
+namespace Space.Station
 {
     public static class Registrator 
     {
         public static IServiceCollection RegisterServices(this IServiceCollection services)
         {
-            return services.AddSingleton<Test1>()
-                .AddScoped<ITest2, Test2>();
+            return services;
         }
     }
 }
@@ -126,24 +212,23 @@ namespace Lib
         
         var expectedRegistrationMethod = @"
 using System;
-namespace Lib 
+namespace Space.Station
 {
     public static class Registrator 
     {
         public static IServiceCollection RegisterServices(this IServiceCollection services)
         {
-            return services.AddSingleton<Test1>()
-                .AddScoped<ITest2, Test2>()
-                .AddTransient<Foo>();
+            services.AddTransient<IFoo, Bar>();
+            return services;
         }
     }
 }
             ";
 
         var markup = new CodeMarkup(sourceText);
-        var doc = libProject.AddDocument("Lib.cs", SourceText.From(markup.Code), filePath: "Lib.cs");
+        var doc = libProject.AddDocument("Lib.cs", SourceText.From(markup.Code), filePath: "Top/Nested/Lib.cs");
         libProject = doc.Project;
-        var registrationDoc = libProject.AddDocument("Registrator.cs", registrationMethod, filePath: "Registrator.cs");
+        var registrationDoc = libProject.AddDocument("Registrator.cs", registrationMethod, filePath: "Top/Registrator.cs");
         libProject = registrationDoc.Project;
 
         var builder = ImmutableArray.CreateBuilder<CodeAction>();
@@ -154,84 +239,8 @@ namespace Lib
         var array = builder.ToImmutable();
         
         Assert.IsFalse(array.IsEmpty);
-        Assert.That(array.Length, Is.EqualTo(3));
+        Assert.AreEqual(3, array.Length);
         
         Verify.CodeAction(array[2], registrationDoc, expectedRegistrationMethod);
-    }
-    
-    [Test]
-    public async Task EmptyRegistrationMethod()
-    {
-        var workspace = new AdhocWorkspace();
-        var solution = workspace.AddSolution(SolutionInfo.Create(SolutionId.CreateNewId(), VersionStamp.Default));
-        var libProject = workspace.AddProject(ProjectInfo.Create(ProjectId.CreateNewId(), VersionStamp.Default, "Lib", "Lib", LanguageNames.CSharp));
-
-        var sourceText = @"
-                using System;
-                namespace Lib 
-                {
-                    [|public class Foo|]: IFoo, IBar
-                    {
-                        public int Prop { get; set; }
-                    }
-
-                    public class Bar 
-                    {
-                       public int Prop { get; set; }
-                    }
-                }
-            ";
-        
-        var registrationMethod = SourceText.From(@"
-using System;
-namespace Lib 
-{
-    public static class Registrator 
-    {
-        public static IServiceCollection RegisterServices(this IServiceCollection services)
-        {
-           
-        }
-    }
-}
-            ");
-        
-        var expectedRegistrationMethod = @"
-using System;
-namespace Lib 
-{
-    public static class Registrator 
-    {
-        public static IServiceCollection RegisterServices(this IServiceCollection services)
-        {
-            return services.AddTransient<Foo>();
-        }
-    }
-}
-            ";
-
-        var markup = new CodeMarkup(sourceText);
-        var doc = libProject.AddDocument("Lib.cs", SourceText.From(markup.Code), filePath: "Lib.cs");
-        libProject = doc.Project;
-        var registrationDoc = libProject.AddDocument("Registrator.cs", registrationMethod, filePath: "Registrator.cs");
-        libProject = registrationDoc.Project;
-
-        var builder = ImmutableArray.CreateBuilder<CodeAction>();
-        doc = libProject.GetDocument(doc.Id);
-        
-        var context = new CodeRefactoringContext(doc, markup.Locator.GetSpan(), a => builder.Add(a), CancellationToken.None);
-        await CreateProvider().ComputeRefactoringsAsync(context);
-        var array = builder.ToImmutable();
-        
-        Assert.IsFalse(array.IsEmpty);
-        Assert.That(array.Length, Is.EqualTo(3));
-        
-        Verify.CodeAction(array[2], registrationDoc, expectedRegistrationMethod);
-    }
-    
-    protected override string LanguageName => LanguageNames.CSharp;
-    protected override CodeRefactoringProvider CreateProvider()
-    {
-        return new AddXRefactoringProvider();
     }
 }

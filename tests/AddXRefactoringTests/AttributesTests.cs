@@ -149,7 +149,7 @@ namespace Lib
                 using System;
                 namespace Lib 
                 {
-                    public class [|Foo|]: IFoo, IBar
+                    public class Foo: IFoo, [|IBar|]
                     {
                         public int Prop { get; set; }
                     }
@@ -183,7 +183,7 @@ namespace Lib
     {
         public static IServiceCollection RegisterServices(this IServiceCollection services)
         {
-            services.AddScoped<IFoo, Foo>();
+            services.AddScoped<IBar, Foo>();
             return services;
         }
     }
@@ -204,8 +204,7 @@ namespace Lib
         var array = builder.ToImmutable();
         
         Assert.IsFalse(array.IsEmpty);
-        Assert.That(array.Length, Is.EqualTo(4));
-        Assert.That(array[3].Title, Is.EqualTo("Register with ..."));
+        Assert.That(array.Length, Is.EqualTo(3));
         
         Verify.CodeAction(array[1], registrationDoc, expectedRegistrationMethod);
     }

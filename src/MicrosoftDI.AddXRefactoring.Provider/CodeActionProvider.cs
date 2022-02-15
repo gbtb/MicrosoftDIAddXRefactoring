@@ -17,34 +17,27 @@ public class CodeActionProvider
         _context = context;
     }
     
-    public IEnumerable<CodeAction> PrepareCodeActions(TypeDeclarationSyntax typeDeclarationSyntax,
-        MethodDeclarationSyntax registrationMethodDeclarationSyntax, List<UsingDirectiveSyntax> usingDirectiveSyntaxes)
+    public IEnumerable<CodeAction> PrepareCodeActions(RefactoringContext refactoringContext,
+        MethodDeclarationSyntax registrationMethodDeclarationSyntax, ISet<UsingDirectiveSyntax> usingDirectiveSyntaxes)
     {
         var serviceCollection = registrationMethodDeclarationSyntax.ParameterList.Parameters.First();
          return GetPossibleAddXInvocations(registrationMethodDeclarationSyntax, IdentifierName(serviceCollection.Identifier),
-            typeDeclarationSyntax, usingDirectiveSyntaxes);
+            refactoringContext, usingDirectiveSyntaxes);
     }
 
     private IEnumerable<CodeAction> GetPossibleAddXInvocations(
         MethodDeclarationSyntax registrationMethodDeclarationSyntax,
         ExpressionSyntax serviceCollection,
-        BaseTypeDeclarationSyntax typeDeclarationSyntax, List<UsingDirectiveSyntax> usingDirectiveSyntaxes)
+        RefactoringContext refactoringContext, ISet<UsingDirectiveSyntax> usingDirectiveSyntaxes)
     {
         TypeArgumentListSyntax mainList;
-        TypeArgumentListSyntax? additionalList;
-        if (typeDeclarationSyntax.BaseList?.Types.FirstOrDefault()?.Type is NameSyntax firstBaseType)
+        if (refactoringContext.SelectedBaseType is { Type: NameSyntax baseTypeName })
         {
             mainList = TypeArgumentList(
                 SeparatedList(new TypeSyntax[]
                 {
-                    IdentifierName(firstBaseType.WithoutTrivia().ToString()),
-                    IdentifierName(typeDeclarationSyntax.Identifier.WithoutTrivia())
-                })
-            );
-            additionalList = TypeArgumentList(
-                SeparatedList(new TypeSyntax[]
-                {
-                    IdentifierName(typeDeclarationSyntax.Identifier.WithoutTrivia())
+                    IdentifierName(baseTypeName.WithoutTrivia().ToString()),
+                    IdentifierName(refactoringContext.TypeToRegister.Identifier.WithoutTrivia())
                 })
             );
         }
@@ -53,26 +46,19 @@ public class CodeActionProvider
             mainList = TypeArgumentList(
                 SeparatedList(new TypeSyntax[]
                 {
-                    IdentifierName(typeDeclarationSyntax.Identifier.WithoutTrivia())
+                    IdentifierName(refactoringContext.TypeToRegister.Identifier.WithoutTrivia())
                 })
             );
-            additionalList = default;
         }
         
         foreach (var codeAction in GenerateCodeActionsForMethods(registrationMethodDeclarationSyntax, serviceCollection, mainList, usingDirectiveSyntaxes)) 
             yield return codeAction;
-
-        if (additionalList == null) 
-            yield break;
-        
-        var methods = GenerateCodeActionsForMethods(registrationMethodDeclarationSyntax, serviceCollection, additionalList, usingDirectiveSyntaxes);
-        yield return CodeAction.Create("Register with ...", methods.ToImmutableArray(), false);
     }
 
     private IEnumerable<CodeAction> GenerateCodeActionsForMethods(
         MethodDeclarationSyntax registrationMethodDeclarationSyntax,
         ExpressionSyntax serviceCollection, TypeArgumentListSyntax argList,
-        List<UsingDirectiveSyntax> usingDirectiveSyntaxes)
+        ISet<UsingDirectiveSyntax> usingDirectiveSyntaxes)
     {
         foreach (var addXMethodName in DefaultMethods)
         {
@@ -86,7 +72,7 @@ public class CodeActionProvider
     
     private Func<CancellationToken, Task<Solution>> CreateChangedSolution(MethodDeclarationSyntax registrationMethod,
         GenericNameSyntax methodCallName, ExpressionSyntax serviceCollection,
-        List<UsingDirectiveSyntax> usingDirectiveSyntaxes)
+        ISet<UsingDirectiveSyntax> usingDirectiveSyntaxes)
     {
         return async token =>
         {
@@ -197,7 +183,7 @@ public class CodeActionProvider
     }
 
     private SyntaxNode AddUsings(SyntaxNode newRoot, MethodDeclarationSyntax methodDeclarationSyntax,
-        IReadOnlyList<UsingDirectiveSyntax> usingDirectiveSyntaxes)
+        ISet<UsingDirectiveSyntax> usingDirectiveSyntaxes)
     {
         var containingNamespace = methodDeclarationSyntax.Ancestors().OfType<BaseNamespaceDeclarationSyntax>()
             .FirstOrDefault();
@@ -206,13 +192,12 @@ public class CodeActionProvider
         
         if (containingNamespace != null)
         {
-            var idx = requiredUsings.FindIndex(s => AreEquivalent(s.Name, containingNamespace.Name));
-            if (idx >= 0)
-            {
-                requiredUsings.RemoveAt(idx);
-                if (requiredUsings.Count == 0)
-                    return newRoot;
-            }
+            var str = containingNamespace.Name.ToFullString();
+            requiredUsings.RemoveAll(s => 
+                AreEquivalent(s.Name, containingNamespace.Name) || str.StartsWith(s.Name.ToFullString()));
+            
+            if (requiredUsings.Count == 0)
+                return newRoot;
         }
             
         var compilationUnit = newRoot.DescendantNodesAndSelf().OfType<CompilationUnitSyntax>().FirstOrDefault();
