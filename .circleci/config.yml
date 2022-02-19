@@ -41,6 +41,13 @@ jobs:
           command: |
             dotnet reportgenerator -reports:coverage.opencover.xml -targetdir:coverage
       - run:
+          working_directory: tests/AddXRefactoringTests
+          name: Upload coverage to codecov
+          command: |
+            curl -Os https://uploader.codecov.io/v0.1.17/linux/codecov
+            chmod +x codecov
+            ./codecov -f coverage/coverage.opencover.xml
+      - run:
           working_directory: src/MicrosoftDI.AddXRefactoring.Package
           name: Pack roslyn code-refactoring
           command: |
