@@ -5,6 +5,9 @@
 This project provides Roslyn code refactoring, which automatically adds Add(Singleton|Scoped|Transient) inferred from your class declaration into nearest DI registration method.
 It could be default ConfigureServices in Startup.cs, or your custom extension method to it.
 
+![Screenshot_20220219_203218](https://user-images.githubusercontent.com/37017396/154797213-9a36e4a2-f20e-4835-8c5c-e5f3e513e0be.png)
+![Screenshot_20220219_202805](https://user-images.githubusercontent.com/37017396/154797216-10ed2a02-7775-4a80-8634-45f5806eee1c.png)
+
 ## Assumptions made
 1. You use Microsoft.Extensions.DependencyInjection to register services
 2. You use default `ConfigureServices` in Startup.cs and/or custom extension methods (Registration Method) to register services with following signature: 
@@ -19,8 +22,7 @@ public static class Module
     }
 }
 ```
-3. You want to modularize and split your registration method into multiple files, and keep them closer to classes which they register  
-   OR you just want to reduce number of keystrokes you need to register class in DI container
+3. You want to modularize and split your registration method into multiple files, and keep them closer to classes which they register OR you just want to reduce number of keystrokes you need to register class in DI container
 4. You don't want to use tools like [Scrutor](https://github.com/khellang/Scrutor) for automated assembly scanning
 5. Then this code refactoring can make your life a little bit easier, generating registration method call for you 🙂
 
@@ -52,6 +54,6 @@ public static class Module
 </Project>
 ```
 
-## Contributions
+## Contributing
 
 Feel free to create Github issue for questions or feature requests 
