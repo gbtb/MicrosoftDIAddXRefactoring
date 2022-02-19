@@ -15,6 +15,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SolutionFolder", "SolutionF
 		Directory.Build.props = Directory.Build.props
 		.circleci\config.yml = .circleci\config.yml
 		global.json = global.json
+		.config\dotnet-tools.json = .config\dotnet-tools.json
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AddXRefactoringTests", "tests\AddXRefactoringTests\AddXRefactoringTests.csproj", "{12ED5B53-ACAA-41C4-B8FC-070332CCB6C6}"

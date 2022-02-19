@@ -26,11 +26,15 @@ jobs:
           command: |
             dotnet paket restore
       - run:
-          # Update this line with the directory that contains your tests project file
           working_directory: tests/AddXRefactoringTests
-          name: Run tests
+          name: Run tests with code coverage
           command: |
-            dotnet dotcover test --dcReportType=HTML --dcOutput=CoverageReport.html
+            dotnet coverlet bin/Debug/net6.0/AddXRefactoringTests.dll -f opencover --target "dotnet" --targetargs "test --no-build"
+      - run:
+          working_directory: tests/AddXRefactoringTests
+          name: Run report generator
+          command: |
+            dotnet reportgenerator -reports:coverage.opencover.xml -targetdir:coverage
       - run:
           working_directory: src/MicrosoftDI.AddXRefactoring.Package
           name: Pack roslyn code-refactoring
@@ -38,15 +42,15 @@ jobs:
             dotnet build -c release
       - run:
           working_directory: src/MicrosoftDI.AddXRefactoring.Attributes
-          name: Pack roslyn code-refactoring
+          name: Pack attributes package
           command: |
             dotnet build -c release
       - store_artifacts:
           path: src/nupkg
           destination: nuget_package
       - store_artifacts:
-          path: tests/AddXRefactoringTests/CoverageReport.html
-          destination: coverage_report
+          path: tests/AddXRefactoringTests/coverage
+          destination: coverage
       - persist_to_workspace:
           root: src
           paths:
