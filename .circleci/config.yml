@@ -27,9 +27,14 @@ jobs:
             dotnet paket restore
       - run:
           working_directory: tests/AddXRefactoringTests
+          name: Build tests
+          command: |
+            dotnet build -c debug
+      - run:
+          working_directory: tests/AddXRefactoringTests
           name: Run tests with code coverage
           command: |
-            dotnet coverlet bin/Debug/net6.0/AddXRefactoringTests.dll -f opencover --target "dotnet" --targetargs "test --no-build"
+            dotnet coverlet bin/Debug/net6.0/AddXRefactoringTests.dll -f opencover --target "dotnet" --targetargs "test" 
       - run:
           working_directory: tests/AddXRefactoringTests
           name: Run report generator
