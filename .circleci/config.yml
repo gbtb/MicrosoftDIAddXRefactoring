@@ -29,12 +29,12 @@ jobs:
           working_directory: tests/AddXRefactoringTests
           name: Build tests
           command: |
-            dotnet build -c debug
+            dotnet build -c Debug
       - run:
           working_directory: tests/AddXRefactoringTests
           name: Run tests with code coverage
           command: |
-            dotnet coverlet bin/Debug/net6.0/AddXRefactoringTests.dll -f opencover --target "dotnet" --targetargs "test" 
+            dotnet coverlet bin/Debug/net6.0/AddXRefactoringTests.dll -f opencover --target "dotnet" --targetargs "test --no-build" 
       - run:
           working_directory: tests/AddXRefactoringTests
           name: Run report generator
