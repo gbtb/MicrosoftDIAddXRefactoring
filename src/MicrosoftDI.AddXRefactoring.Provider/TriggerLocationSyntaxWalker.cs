@@ -4,15 +4,26 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace MicrosoftDI.AddXRefactoring.Provider;
 
-public class TriggerLocationSyntaxWalker: CSharpSyntaxWalker
+/// <summary>
+/// Used to detect position on which refactoring was triggered
+/// </summary>
+internal class TriggerLocationSyntaxWalker: CSharpSyntaxWalker
 {
     private bool _isComplete;
+    
+    /// <summary>
+    /// BaseType on which refactoring was triggered
+    /// </summary>
     public BaseTypeSyntax? BaseType { get; private set; }
     
+    /// <summary>
+    /// Type declaration for which refactoring was triggered
+    /// </summary>
     public TypeDeclarationSyntax? TypeDeclarationSyntax { get; private set; }
 
     public override void DefaultVisit(SyntaxNode node)
     {
+        //dont trigger inside class body
         if (node is MemberDeclarationSyntax)
             return;
         

@@ -16,7 +16,7 @@ jobs:
       - run:
           # Update this line with the directory that contains your tests project file
           working_directory: .
-          name: Install paket
+          name: Install paket & dotcover
           command: |
             dotnet tool restore
       - run:
@@ -30,7 +30,7 @@ jobs:
           working_directory: tests/AddXRefactoringTests
           name: Run tests
           command: |
-            dotnet test
+            dotnet dotcover test --dcReportType=HTML --dcOutput=CoverageReport.html
       - run:
           working_directory: src/MicrosoftDI.AddXRefactoring.Package
           name: Pack roslyn code-refactoring
@@ -44,6 +44,9 @@ jobs:
       - store_artifacts:
           path: src/nupkg
           destination: nuget_package
+      - store_artifacts:
+          path: tests/AddXRefactoringTests/CoverageReport.html
+          destination: coverage_report
       - persist_to_workspace:
           root: src
           paths:

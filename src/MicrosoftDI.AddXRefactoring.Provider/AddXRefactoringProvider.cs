@@ -5,6 +5,10 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace MicrosoftDI.AddXRefactoring.Provider;
 
+/// <summary>
+/// Refactoring provider - acts as an entry point.
+/// Also responsible for collecting info about context where refactoring was triggered, so it can be passed to code action provider.
+/// </summary>
 [ExportCodeRefactoringProvider(LanguageNames.CSharp, Name = nameof(AddXRefactoringProvider))]
 public class AddXRefactoringProvider: CodeRefactoringProvider
 {
@@ -15,36 +19,41 @@ public class AddXRefactoringProvider: CodeRefactoringProvider
             return;
 
         var registrationMethod = await FindNearestRegistrationMethodAsync(context);
-        if (registrationMethod?.Body != null)
+        if (registrationMethod?.Body == null)
+            return;
+        
+        var semanticModel = await context.Document.GetSemanticModelAsync(context.CancellationToken);
+        if (semanticModel == null)
+            return;
+
+        if (ModelExtensions.GetDeclaredSymbol(semanticModel, refactoringContext.TypeToRegister) is not INamedTypeSymbol typeSymbol)
+            return;
+        
+        var requiredUsings = GetRequiredUsings(typeSymbol, refactoringContext);
+
+        var provider = new CodeActionProvider(context);
+        var codeActions = provider.PrepareCodeActions(refactoringContext, registrationMethod, requiredUsings);
+        foreach (var codeAction in codeActions)
         {
-            var provider = new CodeActionProvider(context);
-            
-            var semanticModel = await context.Document.GetSemanticModelAsync(context.CancellationToken);
-            if (semanticModel == null)
-                return;
-
-            if (ModelExtensions.GetDeclaredSymbol(semanticModel, refactoringContext.TypeToRegister) is not INamedTypeSymbol typeSymbol)
-                return;
-            
-            var typeNamespaceSymbol = typeSymbol.ContainingNamespace;
-            INamespaceSymbol? baseNamespaceSymbol = null;
-            if (refactoringContext.SelectedBaseType is {Type: NameSyntax name})
-            {
-                if (typeSymbol.BaseType?.Name == name.ToString())
-                    baseNamespaceSymbol = typeSymbol.BaseType?.ContainingNamespace;
-
-                if (typeSymbol.Interfaces.FirstOrDefault(i => i.Name == name.ToString()) is { } symbol)
-                    baseNamespaceSymbol = symbol.ContainingNamespace;;
-            }
-
-            var requiredUsings = UsingsProvider.GetUsings(typeNamespaceSymbol, baseNamespaceSymbol);
-            
-            var codeActions = provider.PrepareCodeActions(refactoringContext, registrationMethod, requiredUsings);
-            foreach (var codeAction in codeActions)
-            {
-                context.RegisterRefactoring(codeAction);
-            }
+            context.RegisterRefactoring(codeAction);
         }
+    }
+
+    private static ISet<UsingDirectiveSyntax> GetRequiredUsings(INamedTypeSymbol typeSymbol, RefactoringContext refactoringContext)
+    {
+        var typeNamespaceSymbol = typeSymbol.ContainingNamespace;
+        INamespaceSymbol? baseNamespaceSymbol = null;
+        if (refactoringContext.SelectedBaseType is {Type: NameSyntax name})
+        {
+            if (typeSymbol.BaseType?.Name == name.ToString())
+                baseNamespaceSymbol = typeSymbol.BaseType?.ContainingNamespace;
+
+            if (typeSymbol.Interfaces.FirstOrDefault(i => i.Name == name.ToString()) is { } symbol)
+                baseNamespaceSymbol = symbol.ContainingNamespace;
+        }
+
+        var requiredUsings = UsingsProvider.GetUsings(typeNamespaceSymbol, baseNamespaceSymbol);
+        return requiredUsings;
     }
 
     private static async Task<MethodDeclarationSyntax?> FindNearestRegistrationMethodAsync(CodeRefactoringContext context)
@@ -63,14 +72,10 @@ public class AddXRefactoringProvider: CodeRefactoringProvider
 
     private static async Task<MethodDeclarationSyntax?> ScanFolderForRegistrationMethodAsync(string folders, CodeRefactoringContext context, CancellationToken token)
     {
-        var docs = context.Document.Project.Documents.Where(d =>
-        {
-            var dirs = Path.GetDirectoryName(d.FilePath);
-            return dirs != null && folders.Contains(dirs) && context.Document.Id != d.Id;
-        });
+        var docs = GetDocs(context, folders);
         
-        //sorting by longest file path, longer path => closer file is to document which had triggered refactoring
-        foreach (var doc in docs.OrderByDescending(d => d.FilePath?.Length))
+        //sorting by longest dir count. Longer dir chain => closer file is to document which had triggered refactoring
+        foreach (var (_, doc) in docs.OrderByDescending(tup => tup.Length))
         {
             var root = await doc.GetSyntaxRootAsync(token);
             if (root == null)
@@ -89,11 +94,21 @@ public class AddXRefactoringProvider: CodeRefactoringProvider
         return null;
     }
 
+    private static IEnumerable<(int Length, Document doc)> GetDocs(CodeRefactoringContext context, string folders)
+    {
+        foreach (var doc in context.Document.Project.Documents)
+        {
+            var dirs = Path.GetDirectoryName(doc.FilePath); //for some reason d.Folders does not work, maybe it's Rider fault
+            if (dirs != null && folders.Contains(dirs) && context.Document.Id != doc.Id)
+                yield return (dirs.Split(Path.DirectorySeparatorChar).Length, doc);
+        }
+    }
+
     private static MethodDeclarationSyntax? TryGetConfigureServices(SyntaxNode root)
     {
         foreach (var node in root.DescendantNodesAndSelf())
         {
-            if (node is not ClassDeclarationSyntax {Identifier: {ValueText: "Startup"}})
+            if (node is not ClassDeclarationSyntax {Identifier.ValueText: "Startup"})
                 continue;
 
             return ScanDocumentForRegistrationMethod(node, CheckConfigureServicesMethod);
@@ -163,7 +178,7 @@ public class AddXRefactoringProvider: CodeRefactoringProvider
         if (walker.TypeDeclarationSyntax == null)
             return null;
         
-        //generics are harder, maybe later
+        //todo: generics are more complicated, maybe later
         if (walker.TypeDeclarationSyntax.Arity != 0 || walker.TypeDeclarationSyntax.Modifiers.IndexOf(SyntaxKind.StaticKeyword) >= 0)
             return null;
 

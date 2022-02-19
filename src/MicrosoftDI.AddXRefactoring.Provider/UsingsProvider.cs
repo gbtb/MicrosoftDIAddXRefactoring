@@ -4,7 +4,10 @@ using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace MicrosoftDI.AddXRefactoring.Provider;
 
-public class UsingsProvider
+/// <summary>
+/// Gets necessary usings for registering type and/or its base type from semantic model
+/// </summary>
+internal static class UsingsProvider
 {
     public static ISet<UsingDirectiveSyntax> GetUsings(INamespaceSymbol typeNamespaceSymbol, INamespaceSymbol? baseNamespaceSymbol)
     {

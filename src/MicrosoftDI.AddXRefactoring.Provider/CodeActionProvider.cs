@@ -1,4 +1,3 @@
-using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeRefactorings;
@@ -16,8 +15,8 @@ public class CodeActionProvider
     {
         _context = context;
     }
-    
-    public IEnumerable<CodeAction> PrepareCodeActions(RefactoringContext refactoringContext,
+
+    internal IEnumerable<CodeAction> PrepareCodeActions(RefactoringContext refactoringContext,
         MethodDeclarationSyntax registrationMethodDeclarationSyntax, ISet<UsingDirectiveSyntax> usingDirectiveSyntaxes)
     {
         var serviceCollection = registrationMethodDeclarationSyntax.ParameterList.Parameters.First();

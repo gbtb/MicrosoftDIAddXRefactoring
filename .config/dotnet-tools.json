@@ -7,6 +7,12 @@
       "commands": [
         "paket"
       ]
+    },
+    "jetbrains.dotcover.globaltool": {
+      "version": "2021.3.3",
+      "commands": [
+        "dotnet-dotcover"
+      ]
     }
   }
 }

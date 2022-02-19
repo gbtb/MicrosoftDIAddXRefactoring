@@ -34,5 +34,4 @@ It can be installed in any project through [nuget package](https://www.nuget.org
   * If RegistrationMethod contains call chain of length greater than 1, then registration will be appended to that call chain
 * [x] You can annotate method which follows convention, but you don't want to be considered as RegistrationMethod with `[IgnoreRegistrationMethod]` attribute.
 * [x] You can annotate method which does not follow convention, but you want it to be considered as RegistrationMethod with `[RegistrationMethod]` attribute.
-* [x] Add required using if it is not yet added
-* [x] Code action will add registration into `return services.AddX<Foo>().AddX<Bar>()` invocation chain.
+* [x] Adds missing using to RegistrationMethod
