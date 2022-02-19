@@ -1,4 +1,5 @@
 [![Nuget](https://img.shields.io/nuget/v/MicrosoftDI.AddXRefactoring)](https://www.nuget.org/packages/MicrosoftDI.AddXRefactoring/)
+[![codecov](https://codecov.io/gh/gbtb/MicrosoftDIAddXRefactoring/branch/master/graph/badge.svg?token=SP9HHTRPE7)](https://codecov.io/gh/gbtb/MicrosoftDIAddXRefactoring)
 # Microsoft DI AddX Refactoring Provider
 
 This project provides Roslyn code refactoring, which automatically adds Add(Singleton|Scoped|Transient) from your new class declaration into nearest DI registration point.
