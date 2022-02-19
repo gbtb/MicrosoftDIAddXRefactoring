@@ -10,3 +10,6 @@ nuget Nunit
 nuget NUnit.Analyzers
 nuget NUnit3TestAdapter
 nuget SmartAnalyzers.RoslynTestKit
+nuget System.Collections.Immutable 5.0.0
+nuget System.Runtime.CompilerServices.Unsafe 5.0.0
+nuget System.IO.Pipelines 5.0.1

@@ -8,10 +8,5 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <RootNamespace>MicrosoftDI.AddXRefactoring.Provider</RootNamespace>
   </PropertyGroup>
-  <ItemGroup>
-    <PackageReference Update="System.Collections.Immutable" Version="5.0.0" />
-    <PackageReference Update="System.Runtime.CompilerServices.Unsafe" Version="5.0.0" />
-    <PackageReference Update="System.IO.Pipelines" Version="5.0.1" />
-  </ItemGroup>
   <Import Project="..\..\.paket\Paket.Restore.targets" />
 </Project>
