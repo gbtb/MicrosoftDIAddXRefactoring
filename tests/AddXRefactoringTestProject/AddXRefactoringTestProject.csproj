@@ -11,5 +11,8 @@
       <OutputItemType>Analyzer</OutputItemType>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Nested" />
+  </ItemGroup>
   <Import Project="..\..\.paket\Paket.Restore.targets" />
 </Project>
