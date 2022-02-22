@@ -461,7 +461,22 @@ namespace Lib
                        public int Prop { get; set; }
                     }
                 }
-            ").SetName("Interface decl")
+            ").SetName("Interface decl"),
+        new TestCaseData(@"
+                using System;
+                namespace Lib
+                {
+                    public [|struct Foo|]
+                    {
+                        public int Prop { get; set; }
+                    }
+
+                    public class Bar
+                    {
+                       public int Prop { get; set; }
+                    }
+                }
+            ").SetName("Struct decl")
     };
 
     [Test]

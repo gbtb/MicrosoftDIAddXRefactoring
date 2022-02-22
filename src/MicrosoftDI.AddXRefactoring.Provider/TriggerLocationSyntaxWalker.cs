@@ -51,7 +51,6 @@ internal class TriggerLocationSyntaxWalker: CSharpSyntaxWalker
     
     public override void VisitStructDeclaration(StructDeclarationSyntax node)
     {
-        TypeDeclarationSyntax = node;
         _isComplete = true;
     }
 }
